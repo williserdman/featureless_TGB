@@ -12,7 +12,8 @@
 set -euo pipefail
 
 # -------- User-configurable environment (override with sbatch --export=...) --------
-PROJECT_DIR="${PROJECT_DIR:-$HOME/projects/featureless_temporal_benchmark}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_DIR="${PROJECT_DIR:-${SLURM_SUBMIT_DIR:-$(cd "$SCRIPT_DIR/.." && pwd)}}"
 DATASET_ROOT="${DATASET_ROOT:-datasets}"
 COPY_DATA_TO_TMPDIR="${COPY_DATA_TO_TMPDIR:-0}"          # 1 to rsync dataset root to $TMPDIR
 DATASET_SOURCE="${DATASET_SOURCE:-}"                     # required if COPY_DATA_TO_TMPDIR=1
@@ -33,15 +34,19 @@ CONTEXT_SIZE="${CONTEXT_SIZE:-5}"
 NODE2VEC_P="${NODE2VEC_P:-1.0}"
 NODE2VEC_Q="${NODE2VEC_Q:-1.0}"
 
-RESULTS_DIR="${RESULTS_DIR:-results}"
+SCRATCH_ROOT="${SLURM_TMPDIR:-${TMPDIR:-/tmp}}"
+RESULTS_DIR="${RESULTS_DIR:-${SCRATCH_ROOT}/featureless_tgb_results}"
 RESULTS_CSV="${RESULTS_CSV:-${RESULTS_DIR}/recovery_matrix_${SLURM_JOB_ID}.csv}"
 
-# Optional: if your cluster needs Conda, uncomment and adjust.
-# eval "$(conda shell.bash hook)"
-# conda activate <your-env>
+CONDA_ENV_NAME="${CONDA_ENV_NAME:-featureless-tgb-313}"
+
+if command -v conda >/dev/null 2>&1; then
+	eval "$(conda shell.bash hook)"
+	conda activate "$CONDA_ENV_NAME"
+fi
 
 cd "$PROJECT_DIR"
-mkdir -p slurm_logs "$RESULTS_DIR"
+mkdir -p "$RESULTS_DIR"
 
 if [[ "$COPY_DATA_TO_TMPDIR" == "1" ]]; then
 	if [[ -z "$DATASET_SOURCE" ]]; then
@@ -109,7 +114,7 @@ run_main() {
 	local feature_mode="$1"
 	local node_feature_mode="$2"
 
-	uv run python main.py \
+	python "$PROJECT_DIR/main.py" \
 		--datasets "$DATASET_NAME" \
 		--models "$MODEL_NAME" \
 		--root "$DATASET_ROOT" \

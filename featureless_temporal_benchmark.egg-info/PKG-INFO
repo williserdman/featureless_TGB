@@ -27,6 +27,10 @@ Core design rules:
 - Fair dimensionality: all synthetic feature modes are projected/standardized to a shared feature dimension (default d=128).
 - Reproducibility: seeded stochastic generators for noise/walk-based methods.
 
+Dual-path recovery:
+- Message path: controls event message features with --feature-mode.
+- Node-init path: keeps event messages unchanged (for example, full) while injecting causal node initialization features with --node-feature-mode.
+
 ## Datasets
 
 Supported TGB node datasets:
@@ -57,6 +61,16 @@ Supported feature modes:
 - snapshot_node2vec: causal Node2Vec-style snapshot walk embeddings
 - snapshot_deepwalk: causal DeepWalk-style snapshot walk embeddings
 - recency_node2vec: recency-weighted Node2Vec-style walk embeddings
+
+Supported node initialization modes (--node-feature-mode):
+- none
+- gaussian_noise
+- temporal_heuristics
+- snapshot_pagerank
+- recency_pagerank
+- snapshot_node2vec
+- snapshot_deepwalk
+- recency_node2vec
 
 ## Metrics
 
@@ -112,6 +126,7 @@ single = run_experiment(
   dataset="tgbn-trade",
   model="tgn",
   feature_mode="gaussian_noise",
+  node_feature_mode="none",
   feature_dim=128,
   epochs=1,
   max_events=20000,
@@ -124,6 +139,7 @@ suite = run_recovery_suite(
   models=["tgn", "tgat", "dyrep", "evolvegcn", "sage"],
   epochs=1,
   max_events=20000,
+  node_feature_modes=["none", "temporal_heuristics"],
   results_csv="results/api_suite.csv",
 )
 print(len(suite))
@@ -288,6 +304,21 @@ uv run python main.py \
   --node2vec-q 1.0 \
   --recency-tau 1000.0 \
   --results-csv results/synthetic_results.csv \
+  --device cpu
+~~~
+
+Node-init recovery while keeping original messages:
+
+~~~bash
+uv run python main.py \
+  --datasets tgbn-trade tgbn-genre \
+  --models tgn tgat dyrep evolvegcn sage \
+  --epochs 1 \
+  --max-events 50000 \
+  --feature-mode full \
+  --node-feature-mode temporal_heuristics \
+  --node-feature-dim 64 \
+  --results-csv results/node_init_results.csv \
   --device cpu
 ~~~
 
