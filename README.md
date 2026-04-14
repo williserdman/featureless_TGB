@@ -1,181 +1,134 @@
 # Featureless Temporal Benchmark
 
-Temporal node-property benchmark runner for TGB node datasets with:
-- multiple temporal models (TGN, TGAT, DyRep, EvolveGCN-O, GraphSAGE)
-- strict causal synthetic feature injection
-- structured metrics logging (NDCG, AUROC, AP)
-- plotting utilities for feature-ablation comparisons
+Temporal node-property benchmark runner for TGB node datasets.
 
-## What This Repo Evaluates
+This repo now keeps the two recovery pathways strictly separate:
 
-Goal: quantify how much predictive signal can be recovered when rich features are removed and replaced with synthetic, structure-only features.
-
-Core design rules:
-- Causality first: features at time t are computed only from edges observed before the current event update.
-- Fair dimensionality: all synthetic feature modes are projected/standardized to a shared feature dimension (default d=128).
-- Reproducibility: seeded stochastic generators for noise/walk-based methods.
-
-Dual-path recovery:
-- Message path: controls event message features with --feature-mode.
-- Node-init path: keeps event messages unchanged (for example, full) while injecting causal node initialization features with --node-feature-mode.
+- Edge-message pathway: controlled by `--feature-mode`
+- Node-initialization pathway: controlled by `--node-feature-mode`
 
 ## Datasets
 
 Supported TGB node datasets:
-- tgbn-trade
-- tgbn-genre
-- tgbn-reddit
-- tgbn-token
+- `tgbn-trade`
+- `tgbn-genre`
+- `tgbn-reddit`
+- `tgbn-token`
 
-Note: these datasets do not provide dense initial node feature matrices in this pipeline; event/message features are used and can be replaced by synthetic modes.
+These datasets do not provide dense initial node feature matrices in this pipeline, so all node identity signals are generated causally inside the benchmark when requested.
 
 ## Models
 
 Supported models:
-- tgn
-- tgat
-- dyrep
-- evolvegcn
-- sage
+- `tgn`
+- `tgat`
+- `dyrep`
+- `evolvegcn`
+- `sage`
 
-## Feature Modes
+These are benchmarked temporal baselines with a shared temporal-memory backbone and model-specific readout heads.
 
-Supported feature modes:
-- full: original edge message features
-- gaussian_noise: seeded Gaussian baseline
-- temporal_heuristics: causal degree/EMA/PageRank heuristics
-- snapshot_pagerank: causal snapshot PageRank
-- recency_pagerank: exponentially time-decayed PageRank
-- snapshot_node2vec: causal Node2Vec-style snapshot walk embeddings
-- snapshot_deepwalk: causal DeepWalk-style snapshot walk embeddings
-- recency_node2vec: recency-weighted Node2Vec-style walk embeddings
+## Edge-Message Pathway
 
-Supported node initialization modes (--node-feature-mode):
-- none
-- gaussian_noise
-- temporal_heuristics
-- snapshot_pagerank
-- recency_pagerank
-- snapshot_node2vec
-- snapshot_deepwalk
-- recency_node2vec
+Use `--feature-mode` for the event message tensor that is passed into the model at each interaction.
+
+Supported values:
+- `full`: original TGB edge message
+- `unweighted_ones`: constant all-ones tensor of shape `1 x d`
+- `gaussian_noise`: seeded random noise tensor of shape `1 x d`
+- `temporal_delta`: projected time since the same source-destination pair last interacted
+
+Interpretation:
+- `full` measures the fully featured upper baseline.
+- `unweighted_ones` tests whether the model only needs to know that an event occurred.
+- `gaussian_noise` is the pure starvation baseline.
+- `temporal_delta` tests a very small timing-only signal.
+
+## Node-Initialization Pathway
+
+Use `--node-feature-mode` to inject causal node initialization features before event processing.
+
+Supported values:
+- `none`
+- `gaussian_noise`
+- `snapshot_pagerank`
+- `snapshot_node2vec`
+- `snapshot_deepwalk`
+
+Interpretation:
+- `gaussian_noise` is the naive node-init baseline.
+- `snapshot_pagerank` injects a causal PageRank identity signal.
+- `snapshot_node2vec` injects causal walk-based structural features.
+- `snapshot_deepwalk` injects causal walk-based structural features with uniform transitions.
 
 ## Metrics
 
 Primary benchmark metric:
-- ndcg (from dataset.eval_metric on TGBn tasks)
+- `ndcg` from the TGB evaluator
 
 Supplemental diagnostics:
-- auroc
-- ap
+- `auroc`
+- `ap`
 
-Interpretation:
-- NDCG: higher is better
-- AUROC: higher is better
-- AP: higher is better
-
-AUROC/AP are computed on binarized relevance labels (label > 0) and may be NaN when mathematically undefined in sparse windows.
+`auroc` and `ap` are computed on binarized relevance labels (`label > 0`) and may be `NaN` in sparse windows.
 
 ## Installation
 
-~~~bash
+```bash
 uv sync
-~~~
+```
 
-For local package-style usage:
+For editable install:
 
-~~~bash
+```bash
 pip install -e .
-~~~
-
-Run commands through uv:
-
-~~~bash
-uv run python main.py --help
-~~~
-
-Console script after installation:
-
-~~~bash
-featureless-benchmark --help
-~~~
-
-## Developer API
-
-Importable API module:
-
-~~~python
-from featureless_temporal_benchmark import inspect_dataset, run_experiment, run_recovery_suite
-
-summary = inspect_dataset("tgbn-trade")
-print(summary["num_events"], summary["msg_dim"], summary["eval_metric"])
-
-single = run_experiment(
-  dataset="tgbn-trade",
-  model="tgn",
-  feature_mode="gaussian_noise",
-  node_feature_mode="none",
-  feature_dim=128,
-  epochs=1,
-  max_events=20000,
-  results_csv="results/api_runs.csv",
-)
-print(single["test_ndcg"], single["test_ap"], single["test_auroc"])
-
-suite = run_recovery_suite(
-  dataset="tgbn-trade",
-  models=["tgn", "tgat", "dyrep", "evolvegcn", "sage"],
-  epochs=1,
-  max_events=20000,
-  node_feature_modes=["none", "temporal_heuristics"],
-  results_csv="results/api_suite.csv",
-)
-print(len(suite))
-~~~
+```
 
 ## Quick Start
 
-Single smoke run:
-
-~~~bash
+```bash
 uv run python main.py \
   --datasets tgbn-trade \
   --models tgn \
   --epochs 1 \
   --max-events 5000 \
   --device cpu
-~~~
+```
 
-Multi-model smoke run:
+## Recommended Ablation Protocol
 
-~~~bash
-uv run python main.py \
-  --datasets tgbn-trade \
-  --models tgn tgat dyrep evolvegcn sage \
-  --epochs 1 \
-  --max-events 5000 \
-  --device cpu
-~~~
+### Edge-message ablations
 
-## Recommended Baseline Protocol
+Fully featured baseline:
 
-1) Fully featured baseline:
-
-~~~bash
+```bash
 uv run python main.py \
   --datasets tgbn-trade tgbn-genre \
   --models tgn tgat dyrep evolvegcn sage \
   --epochs 1 \
   --max-events 50000 \
   --feature-mode full \
-  --feature-dim 128 \
-  --results-csv results/baseline_results.csv \
+  --results-csv results/edge_ablation.csv \
   --device cpu
-~~~
+```
 
-2) Gaussian noise baseline:
+Interaction-only baseline:
 
-~~~bash
+```bash
+uv run python main.py \
+  --datasets tgbn-trade tgbn-genre \
+  --models tgn tgat dyrep evolvegcn sage \
+  --epochs 1 \
+  --max-events 50000 \
+  --feature-mode unweighted_ones \
+  --feature-dim 128 \
+  --results-csv results/edge_ablation.csv \
+  --device cpu
+```
+
+Noise baseline:
+
+```bash
 uv run python main.py \
   --datasets tgbn-trade tgbn-genre \
   --models tgn tgat dyrep evolvegcn sage \
@@ -185,205 +138,83 @@ uv run python main.py \
   --feature-dim 128 \
   --noise-std 1.0 \
   --noise-seed 12345 \
-  --results-csv results/baseline_results.csv \
+  --results-csv results/edge_ablation.csv \
   --device cpu
-~~~
+```
 
-## Synthetic Feature Runs
+Timing-only baseline:
 
-Temporal heuristics:
-
-~~~bash
+```bash
 uv run python main.py \
   --datasets tgbn-trade tgbn-genre \
   --models tgn tgat dyrep evolvegcn sage \
   --epochs 1 \
   --max-events 50000 \
-  --feature-mode temporal_heuristics \
+  --feature-mode temporal_delta \
   --feature-dim 128 \
-  --temporal-ema-alpha 0.1 \
-  --pagerank-interval 100 \
-  --results-csv results/synthetic_results.csv \
+  --results-csv results/edge_ablation.csv \
   --device cpu
-~~~
+```
 
-Snapshot PageRank:
+### Node-initialization ablations
 
-~~~bash
-uv run python main.py \
-  --datasets tgbn-trade tgbn-genre \
-  --models tgn tgat dyrep evolvegcn sage \
-  --epochs 1 \
-  --max-events 50000 \
-  --feature-mode snapshot_pagerank \
-  --feature-dim 128 \
-  --results-csv results/synthetic_results.csv \
-  --device cpu
-~~~
-
-Recency-weighted PageRank:
-
-~~~bash
-uv run python main.py \
-  --datasets tgbn-trade tgbn-genre \
-  --models tgn tgat dyrep evolvegcn sage \
-  --epochs 1 \
-  --max-events 50000 \
-  --feature-mode recency_pagerank \
-  --feature-dim 128 \
-  --recency-tau 1000.0 \
-  --results-csv results/synthetic_results.csv \
-  --device cpu
-~~~
-
-Snapshot Node2Vec:
-
-~~~bash
-uv run python main.py \
-  --datasets tgbn-trade tgbn-genre \
-  --models tgn tgat dyrep evolvegcn sage \
-  --epochs 1 \
-  --max-events 50000 \
-  --feature-mode snapshot_node2vec \
-  --feature-dim 128 \
-  --embedding-dim 64 \
-  --walk-length 20 \
-  --walks-per-node 3 \
-  --context-size 5 \
-  --node2vec-p 1.0 \
-  --node2vec-q 1.0 \
-  --results-csv results/synthetic_results.csv \
-  --device cpu
-~~~
-
-Snapshot DeepWalk:
-
-~~~bash
-uv run python main.py \
-  --datasets tgbn-trade tgbn-genre \
-  --models tgn tgat dyrep evolvegcn sage \
-  --epochs 1 \
-  --max-events 50000 \
-  --feature-mode snapshot_deepwalk \
-  --feature-dim 128 \
-  --embedding-dim 64 \
-  --walk-length 20 \
-  --walks-per-node 3 \
-  --context-size 5 \
-  --results-csv results/synthetic_results.csv \
-  --device cpu
-~~~
-
-Recency-weighted Node2Vec:
-
-~~~bash
-uv run python main.py \
-  --datasets tgbn-trade tgbn-genre \
-  --models tgn tgat dyrep evolvegcn sage \
-  --epochs 1 \
-  --max-events 50000 \
-  --feature-mode recency_node2vec \
-  --feature-dim 128 \
-  --embedding-dim 64 \
-  --walk-length 20 \
-  --walks-per-node 3 \
-  --context-size 5 \
-  --node2vec-p 1.0 \
-  --node2vec-q 1.0 \
-  --recency-tau 1000.0 \
-  --results-csv results/synthetic_results.csv \
-  --device cpu
-~~~
-
-Node-init recovery while keeping original messages:
-
-~~~bash
+```bash
 uv run python main.py \
   --datasets tgbn-trade tgbn-genre \
   --models tgn tgat dyrep evolvegcn sage \
   --epochs 1 \
   --max-events 50000 \
   --feature-mode full \
-  --node-feature-mode temporal_heuristics \
+  --node-feature-mode snapshot_pagerank \
   --node-feature-dim 64 \
-  --results-csv results/node_init_results.csv \
+  --results-csv results/node_ablation.csv \
   --device cpu
-~~~
+```
 
-## Plotting
+Use `--node-feature-mode gaussian_noise`, `snapshot_node2vec`, or `snapshot_deepwalk` to test the other node-init baselines while keeping the edge messages fixed.
 
-Single metric:
+## Developer API
 
-~~~bash
-uv run python plot_results.py \
-  --results-csv results/baseline_results.csv \
-  --metric ndcg \
-  --max-events 50000 \
-  --output results/full_vs_noise_ndcg_50k.png
-~~~
+```python
+from featureless_temporal_benchmark import inspect_dataset, run_experiment, run_recovery_suite
 
-All metrics (NDCG, AP, AUROC):
+summary = inspect_dataset("tgbn-trade")
+print(summary["num_events"], summary["msg_dim"], summary["eval_metric"])
 
-~~~bash
-uv run python plot_results.py \
-  --results-csv results/baseline_results.csv \
-  --metric all \
-  --max-events 50000 \
-  --output results/full_vs_noise_all_metrics_50k.png
-~~~
+single = run_experiment(
+    dataset="tgbn-trade",
+    model="tgn",
+    feature_mode="temporal_delta",
+    node_feature_mode="snapshot_pagerank",
+    feature_dim=128,
+    node_feature_dim=64,
+    epochs=1,
+    max_events=20000,
+    results_csv="results/api_runs.csv",
+)
+print(single["test_ndcg"], single["test_ap"], single["test_auroc"])
 
-## Unit Tests
+suite = run_recovery_suite(
+    dataset="tgbn-trade",
+    models=["tgn", "tgat", "dyrep", "evolvegcn", "sage"],
+    feature_modes=["full", "unweighted_ones", "gaussian_noise", "temporal_delta"],
+    node_feature_modes=["none", "gaussian_noise", "snapshot_pagerank", "snapshot_node2vec", "snapshot_deepwalk"],
+    epochs=1,
+    max_events=20000,
+    results_csv="results/api_suite.csv",
+)
+print(len(suite))
+```
 
-~~~bash
-uv run python -m unittest -v tests/test_masking_and_labels.py
-uv run python -m unittest -v tests/test_synthetic_features.py
-~~~
+## Notes
 
-What these cover:
-- import sanity for project modules
-- split mask disjointness and temporal ordering
-- label-batch sparsity behavior under max-events caps
-- deterministic noise generation
-- causal synthetic feature behavior
-- deterministic recency walk-mode behavior
-
-## Important Runtime Notes
-
-- On tgbn-trade, small max-events values (for example 5000) can include zero train label batches. This is expected due to label sparsity timing; use larger max-events (for example 20000+) for train-signal runs.
-- TGAT uses a reduced effective learning rate by default via tgat-lr-mult.
+- Small `--max-events` values can produce zero train label batches on sparse windows, especially for `tgbn-trade`.
+- TGAT uses a reduced effective learning rate by default via `--tgat-lr-mult`.
 - Gradient clipping is enabled by default for stability.
 
-## CLI Reference (Current)
+## Tests
 
-~~~text
---datasets
---root
---models
---epochs
---lr
---memory-dim
---time-dim
---max-events
---tgat-heads
---temporal-sampling
---temporal-stride
---temporal-ratio
---temporal-seed
---feature-mode
---feature-dim
---embedding-dim
---walk-length
---walks-per-node
---context-size
---node2vec-p
---node2vec-q
---noise-std
---noise-seed
---temporal-ema-alpha
---pagerank-interval
---recency-tau
---grad-clip-norm
---tgat-lr-mult
---results-csv
---device
-~~~
+```bash
+uv run python -m unittest -v tests/test_masking_and_labels.py
+uv run python -m unittest -v tests/test_synthetic_features.py
+```

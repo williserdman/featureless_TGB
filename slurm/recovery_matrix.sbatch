@@ -23,10 +23,6 @@ MAX_EVENTS="${MAX_EVENTS:-50000}"
 DEVICE="${DEVICE:-cuda}"
 FEATURE_DIM="${FEATURE_DIM:-128}"
 NODE_FEATURE_DIM="${NODE_FEATURE_DIM:-64}"
-
-TEMPORAL_EMA_ALPHA="${TEMPORAL_EMA_ALPHA:-0.1}"
-PAGERANK_INTERVAL="${PAGERANK_INTERVAL:-100}"
-RECENCY_TAU="${RECENCY_TAU:-1000.0}"
 EMBEDDING_DIM="${EMBEDDING_DIM:-64}"
 WALK_LENGTH="${WALK_LENGTH:-20}"
 WALKS_PER_NODE="${WALKS_PER_NODE:-3}"
@@ -69,24 +65,17 @@ MODELS=("tgn" "tgat" "dyrep" "evolvegcn" "sage")
 
 EDGE_MODES=(
 	"full"
+	"unweighted_ones"
 	"gaussian_noise"
-	"temporal_heuristics"
-	"snapshot_pagerank"
-	"recency_pagerank"
-	"snapshot_node2vec"
-	"snapshot_deepwalk"
-	"recency_node2vec"
+	"temporal_delta"
 )
 
 NODE_MODES=(
 	"none"
 	"gaussian_noise"
-	"temporal_heuristics"
 	"snapshot_pagerank"
-	"recency_pagerank"
 	"snapshot_node2vec"
 	"snapshot_deepwalk"
-	"recency_node2vec"
 )
 
 N_DATASETS=${#DATASETS[@]}
@@ -125,9 +114,6 @@ run_main() {
 		--feature-dim "$FEATURE_DIM" \
 		--node-feature-mode "$node_feature_mode" \
 		--node-feature-dim "$NODE_FEATURE_DIM" \
-		--temporal-ema-alpha "$TEMPORAL_EMA_ALPHA" \
-		--pagerank-interval "$PAGERANK_INTERVAL" \
-		--recency-tau "$RECENCY_TAU" \
 		--embedding-dim "$EMBEDDING_DIM" \
 		--walk-length "$WALK_LENGTH" \
 		--walks-per-node "$WALKS_PER_NODE" \

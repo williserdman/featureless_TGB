@@ -57,9 +57,6 @@ def run_experiment(
     feature_dim: int = 128,
     noise_std: float = 1.0,
     noise_seed: int = 12345,
-    temporal_ema_alpha: float = 0.1,
-    pagerank_interval: int = 100,
-    recency_tau: float = 1000.0,
     embedding_dim: int = 64,
     walk_length: int = 20,
     walks_per_node: int = 3,
@@ -100,9 +97,6 @@ def run_experiment(
         feature_dim=feature_dim,
         noise_std=noise_std,
         noise_seed=noise_seed,
-        temporal_ema_alpha=temporal_ema_alpha,
-        pagerank_interval=pagerank_interval,
-        recency_tau=recency_tau,
         embedding_dim=embedding_dim,
         walk_length=walk_length,
         walks_per_node=walks_per_node,
@@ -137,15 +131,11 @@ def run_recovery_suite(
 
     modes = feature_modes or [
         "full",
+        "unweighted_ones",
         "gaussian_noise",
-        "temporal_heuristics",
-        "snapshot_pagerank",
-        "recency_pagerank",
-        "snapshot_node2vec",
-        "snapshot_deepwalk",
-        "recency_node2vec",
+        "temporal_delta",
     ]
-    node_modes = node_feature_modes or ["none"]
+    node_modes = node_feature_modes or ["none", "gaussian_noise", "snapshot_pagerank", "snapshot_node2vec", "snapshot_deepwalk"]
 
     outputs: list[dict[str, object]] = []
     for model in models:

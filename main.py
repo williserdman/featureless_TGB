@@ -28,15 +28,6 @@ RESULTS_FIELDNAMES = [
     "feature_dim",
     "noise_std",
     "noise_seed",
-    "temporal_ema_alpha",
-    "pagerank_interval",
-    "recency_tau",
-    "embedding_dim",
-    "walk_length",
-    "walks_per_node",
-    "context_size",
-    "node2vec_p",
-    "node2vec_q",
     "node_feature_mode",
     "node_feature_dim",
     "node_feature_noise_std",
@@ -340,9 +331,6 @@ def train_dataset(
     feature_dim: int,
     noise_std: float,
     noise_seed: int,
-    temporal_ema_alpha: float,
-    pagerank_interval: int,
-    recency_tau: float,
     embedding_dim: int,
     walk_length: int,
     walks_per_node: int,
@@ -390,15 +378,6 @@ def train_dataset(
             feature_dim=raw_msg_dim,
             noise_seed=noise_seed,
             noise_std=noise_std,
-            temporal_ema_alpha=temporal_ema_alpha,
-            pagerank_interval=pagerank_interval,
-            recency_tau=recency_tau,
-            embedding_dim=embedding_dim,
-            walk_length=walk_length,
-            walks_per_node=walks_per_node,
-            context_size=context_size,
-            node2vec_p=node2vec_p,
-            node2vec_q=node2vec_q,
         )
     )
 
@@ -411,9 +390,6 @@ def train_dataset(
                 node_feature_dim=effective_node_feature_dim,
                 noise_seed=node_feature_noise_seed,
                 noise_std=node_feature_noise_std,
-                temporal_ema_alpha=temporal_ema_alpha,
-                pagerank_interval=pagerank_interval,
-                recency_tau=recency_tau,
                 embedding_dim=embedding_dim,
                 walk_length=walk_length,
                 walks_per_node=walks_per_node,
@@ -595,15 +571,6 @@ def train_dataset(
             "feature_dim": raw_msg_dim,
             "noise_std": noise_std,
             "noise_seed": noise_seed,
-            "temporal_ema_alpha": temporal_ema_alpha,
-            "pagerank_interval": pagerank_interval,
-            "recency_tau": recency_tau,
-            "embedding_dim": embedding_dim,
-            "walk_length": walk_length,
-            "walks_per_node": walks_per_node,
-            "context_size": context_size,
-            "node2vec_p": node2vec_p,
-            "node2vec_q": node2vec_q,
             "node_feature_mode": node_feature_mode,
             "node_feature_dim": 0 if effective_node_feature_dim is None else effective_node_feature_dim,
             "node_feature_noise_std": node_feature_noise_std,
@@ -716,13 +683,9 @@ def parse_args() -> argparse.Namespace:
         default="full",
         choices=[
             "full",
+            "unweighted_ones",
             "gaussian_noise",
-            "temporal_heuristics",
-            "snapshot_pagerank",
-            "recency_pagerank",
-            "snapshot_node2vec",
-            "snapshot_deepwalk",
-            "recency_node2vec",
+            "temporal_delta",
         ],
         help="Feature source for event messages.",
     )
@@ -730,43 +693,7 @@ def parse_args() -> argparse.Namespace:
         "--feature-dim",
         type=int,
         default=128,
-        help="Synthetic feature dimensionality for non-full feature modes.",
-    )
-    parser.add_argument(
-        "--embedding-dim",
-        type=int,
-        default=64,
-        help="Base embedding dimension for snapshot node-walk feature modes.",
-    )
-    parser.add_argument(
-        "--walk-length",
-        type=int,
-        default=20,
-        help="Random-walk length for snapshot_node2vec/snapshot_deepwalk/recency_node2vec.",
-    )
-    parser.add_argument(
-        "--walks-per-node",
-        type=int,
-        default=3,
-        help="Number of random walks started per active node.",
-    )
-    parser.add_argument(
-        "--context-size",
-        type=int,
-        default=5,
-        help="Context window used for walk co-occurrence embeddings.",
-    )
-    parser.add_argument(
-        "--node2vec-p",
-        type=float,
-        default=1.0,
-        help="Node2Vec return parameter p for snapshot_node2vec/recency_node2vec.",
-    )
-    parser.add_argument(
-        "--node2vec-q",
-        type=float,
-        default=1.0,
-        help="Node2Vec in-out parameter q for snapshot_node2vec/recency_node2vec.",
+        help="Synthetic feature dimensionality for non-full edge modes.",
     )
     parser.add_argument(
         "--noise-std",
@@ -781,18 +708,51 @@ def parse_args() -> argparse.Namespace:
         help="Seed used to deterministically generate Gaussian noise features.",
     )
     parser.add_argument(
+        "--embedding-dim",
+        type=int,
+        default=64,
+        help="Embedding dimension used by node-initialization walk features.",
+    )
+    parser.add_argument(
+        "--walk-length",
+        type=int,
+        default=20,
+        help="Random-walk length for node-initialization walk features.",
+    )
+    parser.add_argument(
+        "--walks-per-node",
+        type=int,
+        default=3,
+        help="Number of walks started per active node.",
+    )
+    parser.add_argument(
+        "--context-size",
+        type=int,
+        default=5,
+        help="Context window used when turning walks into embeddings.",
+    )
+    parser.add_argument(
+        "--node2vec-p",
+        type=float,
+        default=1.0,
+        help="Node2Vec return parameter p for node-initialization walk features.",
+    )
+    parser.add_argument(
+        "--node2vec-q",
+        type=float,
+        default=1.0,
+        help="Node2Vec in-out parameter q for node-initialization walk features.",
+    )
+    parser.add_argument(
         "--node-feature-mode",
         type=str,
         default="none",
         choices=[
             "none",
             "gaussian_noise",
-            "temporal_heuristics",
             "snapshot_pagerank",
-            "recency_pagerank",
             "snapshot_node2vec",
             "snapshot_deepwalk",
-            "recency_node2vec",
         ],
         help="Optional node initialization feature source; 'none' disables node-feature injection.",
     )
@@ -813,24 +773,6 @@ def parse_args() -> argparse.Namespace:
         type=int,
         default=54321,
         help="Seed used to deterministically generate node Gaussian features.",
-    )
-    parser.add_argument(
-        "--temporal-ema-alpha",
-        type=float,
-        default=0.1,
-        help="EMA alpha for temporal heuristic features.",
-    )
-    parser.add_argument(
-        "--pagerank-interval",
-        type=int,
-        default=100,
-        help="Recompute interval (in events) for causal PageRank in temporal heuristics.",
-    )
-    parser.add_argument(
-        "--recency-tau",
-        type=float,
-        default=1000.0,
-        help="Exponential decay timescale for recency-weighted PageRank mode.",
     )
     parser.add_argument(
         "--grad-clip-norm",
@@ -886,9 +828,6 @@ def main() -> None:
                 feature_dim=args.feature_dim,
                 noise_std=args.noise_std,
                 noise_seed=args.noise_seed,
-                temporal_ema_alpha=args.temporal_ema_alpha,
-                pagerank_interval=args.pagerank_interval,
-                recency_tau=args.recency_tau,
                 embedding_dim=args.embedding_dim,
                 walk_length=args.walk_length,
                 walks_per_node=args.walks_per_node,
