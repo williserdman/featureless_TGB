@@ -9,7 +9,7 @@ import numpy as np
 
 DEFAULT_DATASETS = ["tgbn-trade", "tgbn-genre"]
 DEFAULT_MODELS = ["tgn", "tgat", "dyrep", "evolvegcn", "sage"]
-VALID_MODES = {"full", "gaussian_noise"}
+VALID_MODES = {"full", "unweighted_ones", "gaussian_noise", "temporal_delta"}
 
 OLD_FIELDS = [
     "dataset",
@@ -90,15 +90,6 @@ LATEST_FIELDS = [
     "feature_dim",
     "noise_std",
     "noise_seed",
-    "temporal_ema_alpha",
-    "pagerank_interval",
-    "recency_tau",
-    "embedding_dim",
-    "walk_length",
-    "walks_per_node",
-    "context_size",
-    "node2vec_p",
-    "node2vec_q",
     "node_feature_mode",
     "node_feature_dim",
     "node_feature_noise_std",
