@@ -1,0 +1,2 @@
+[console_scripts]
+featureless-benchmark = main:main

@@ -1,0 +1,38 @@
+[build-system]
+requires = ["setuptools>=70.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "featureless-temporal-benchmark"
+version = "0.1.0"
+description = "Open benchmark for feature ablation and synthetic feature recovery on TGB temporal node datasets"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "matplotlib>=3.10.0",
+    "py-tgb>=2.2.0",
+    "scikit-learn>=1.7.0",
+    "torch>=2.11.0",
+    "torch-geometric>=2.7.0",
+]
+
+[project.scripts]
+featureless-benchmark = "main:main"
+
+[tool.setuptools]
+py-modules = [
+    "main",
+    "models",
+    "sampling",
+    "metrics_utils",
+    "synthetic_features",
+    "plot_results",
+    "feature_modes",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["featureless_temporal_benchmark*"]
+
+[tool.uv.extra-build-dependencies]
+    torch-scatter = ["torch"]

@@ -1,0 +1,5 @@
+matplotlib>=3.10.0
+py-tgb>=2.2.0
+scikit-learn>=1.7.0
+torch>=2.11.0
+torch-geometric>=2.7.0
