@@ -83,6 +83,11 @@ class TestSyntheticFeatureEngine(unittest.TestCase):
             context_size=2,
             node2vec_p=1.0,
             node2vec_q=1.0,
+            gae_refresh_interval=4,
+            gae_steps=2,
+            gae_lr=0.05,
+            gae_max_edges=256,
+            gae_batch_size=32,
         )
         g1 = NodeFeatureGenerator(cfg)
         g2 = NodeFeatureGenerator(cfg)
@@ -104,6 +109,11 @@ class TestSyntheticFeatureEngine(unittest.TestCase):
             context_size=2,
             node2vec_p=1.0,
             node2vec_q=1.0,
+            gae_refresh_interval=4,
+            gae_steps=2,
+            gae_lr=0.05,
+            gae_max_edges=256,
+            gae_batch_size=32,
         )
         gen = NodeFeatureGenerator(cfg)
         f0 = gen.node_features_for_time(current_time=10)
@@ -126,6 +136,11 @@ class TestSyntheticFeatureEngine(unittest.TestCase):
             context_size=2,
             node2vec_p=0.5,
             node2vec_q=2.0,
+            gae_refresh_interval=4,
+            gae_steps=2,
+            gae_lr=0.05,
+            gae_max_edges=256,
+            gae_batch_size=32,
         )
         gen = NodeFeatureGenerator(cfg)
         base = gen.node_features_for_time(current_time=10)
@@ -148,6 +163,11 @@ class TestSyntheticFeatureEngine(unittest.TestCase):
             context_size=2,
             node2vec_p=1.0,
             node2vec_q=1.0,
+            gae_refresh_interval=4,
+            gae_steps=2,
+            gae_lr=0.05,
+            gae_max_edges=256,
+            gae_batch_size=32,
         )
         g1 = NodeFeatureGenerator(cfg)
         g2 = NodeFeatureGenerator(cfg)
@@ -156,6 +176,68 @@ class TestSyntheticFeatureEngine(unittest.TestCase):
         out1 = g1.node_features_for_time(current_time=11)
         out2 = g2.node_features_for_time(current_time=11)
         self.assertTrue(torch.allclose(out1, out2))
+
+    def test_node_snapshot_gae_is_deterministic(self) -> None:
+        cfg = NodeFeatureConfig(
+            mode="snapshot_gae",
+            num_nodes=12,
+            node_feature_dim=8,
+            noise_seed=111,
+            noise_std=1.0,
+            embedding_dim=6,
+            walk_length=6,
+            walks_per_node=2,
+            context_size=2,
+            node2vec_p=1.0,
+            node2vec_q=1.0,
+            gae_refresh_interval=2,
+            gae_steps=3,
+            gae_lr=0.05,
+            gae_max_edges=256,
+            gae_batch_size=32,
+        )
+        g1 = NodeFeatureGenerator(cfg)
+        g2 = NodeFeatureGenerator(cfg)
+        for src, dst in [(1, 2), (2, 3), (3, 4), (4, 5)]:
+            g1.update_state(src=src, dst=dst, current_time=10)
+            g2.update_state(src=src, dst=dst, current_time=10)
+
+        out1 = g1.node_features_for_time(current_time=11)
+        out2 = g2.node_features_for_time(current_time=11)
+        self.assertEqual(out1.shape, (12, 8))
+        self.assertTrue(torch.allclose(out1, out2, atol=1e-6))
+
+    def test_node_snapshot_gae_refresh_interval_reuses_cached_features(self) -> None:
+        cfg = NodeFeatureConfig(
+            mode="snapshot_gae",
+            num_nodes=10,
+            node_feature_dim=8,
+            noise_seed=123,
+            noise_std=1.0,
+            embedding_dim=6,
+            walk_length=6,
+            walks_per_node=2,
+            context_size=2,
+            node2vec_p=1.0,
+            node2vec_q=1.0,
+            gae_refresh_interval=3,
+            gae_steps=2,
+            gae_lr=0.05,
+            gae_max_edges=256,
+            gae_batch_size=32,
+        )
+        gen = NodeFeatureGenerator(cfg)
+        gen.update_state(src=1, dst=2, current_time=1)
+        first = gen.node_features_for_time(current_time=2)
+
+        gen.update_state(src=2, dst=3, current_time=3)
+        second = gen.node_features_for_time(current_time=4)
+        self.assertTrue(torch.allclose(first, second, atol=1e-6))
+
+        gen.update_state(src=3, dst=4, current_time=5)
+        gen.update_state(src=4, dst=5, current_time=6)
+        third = gen.node_features_for_time(current_time=7)
+        self.assertFalse(torch.allclose(second, third, atol=1e-6))
 
 
 if __name__ == "__main__":

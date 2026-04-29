@@ -1,0 +1,453 @@
+Using device: cpu
+
+=== Dataset: tgbn-trade | Model: tgn ===
+Sampling[stride] kept 13489/337224 (4.0%), est_speedup=25.00x
+Split[train] start events=13489
+Split[train] progress 2000/13489 label_batches=5
+Split[train] progress 4000/13489 label_batches=9
+Split[train] progress 6000/13489 label_batches=12
+Split[train] progress 8000/13489 label_batches=16
+Split[train] progress 10000/13489 label_batches=19
+Split[train] progress 12000/13489 label_batches=21
+/Users/williserdman/Documents/school/spring2026/graph_ml/featureless_temporal_benchmark/main.py:290: UserWarning: Split train: skipped primary metric ndcg because target size=1279080 exceeds max_primary_metric_targets=1000000.
+  warnings.warn(
+/Users/williserdman/Documents/school/spring2026/graph_ml/featureless_temporal_benchmark/main.py:307: UserWarning: Split train: skipped AUROC/AP because target size=1279080 exceeds max_supplemental_metric_targets=1000000.
+  warnings.warn(
+Split[train] events=13489 labeled_timestamps=23 empty_label_events=13466 label_batches=23
+Sampling[stride] kept 2927/73170 (4.0%), est_speedup=25.00x
+Split[val] start events=2927
+Split[val] progress 2000/2927 label_batches=3
+/Users/williserdman/Documents/school/spring2026/graph_ml/featureless_temporal_benchmark/main.py:290: UserWarning: Split train_eval: skipped primary metric ndcg because target size=1279080 exceeds max_primary_metric_targets=1000000.
+  warnings.warn(
+/Users/williserdman/Documents/school/spring2026/graph_ml/featureless_temporal_benchmark/main.py:307: UserWarning: Split train_eval: skipped AUROC/AP because target size=1279080 exceeds max_supplemental_metric_targets=1000000.
+  warnings.warn(
+Split[val] events=2927 labeled_timestamps=4 empty_label_events=2923 label_batches=4
+Epoch 01 | train_loss=0.3226 train_ndcg=nan train_auroc=nan train_ap=nan val_ndcg=0.0226 val_auroc=0.4984 val_ap=0.3215
+Sampling[stride] kept 2315/57851 (4.0%), est_speedup=24.99x
+Split[test] start events=2315
+Split[test] progress 2000/2315 label_batches=3
+Split[test] events=2315 labeled_timestamps=3 empty_label_events=2312 label_batches=3
+Test ndcg: 0.0213 | AUROC: 0.4898 | AP: 0.3142
+
+=== Dataset: tgbn-trade | Model: tgat ===
+TGAT LR override enabled: base_lr=1.00e-03, effective_lr=1.00e-04
+Sampling[stride] kept 13489/337224 (4.0%), est_speedup=25.00x
+Split[train] start events=13489
+Split[train] progress 2000/13489 label_batches=5
+Split[train] progress 4000/13489 label_batches=9
+Split[train] progress 6000/13489 label_batches=12
+Split[train] progress 8000/13489 label_batches=16
+Split[train] progress 10000/13489 label_batches=19
+Split[train] progress 12000/13489 label_batches=21
+/Users/williserdman/Documents/school/spring2026/graph_ml/featureless_temporal_benchmark/main.py:290: UserWarning: Split train: skipped primary metric ndcg because target size=1279080 exceeds max_primary_metric_targets=1000000.
+  warnings.warn(
+/Users/williserdman/Documents/school/spring2026/graph_ml/featureless_temporal_benchmark/main.py:307: UserWarning: Split train: skipped AUROC/AP because target size=1279080 exceeds max_supplemental_metric_targets=1000000.
+  warnings.warn(
+Split[train] events=13489 labeled_timestamps=23 empty_label_events=13466 label_batches=23
+Sampling[stride] kept 2927/73170 (4.0%), est_speedup=25.00x
+Split[val] start events=2927
+Split[val] progress 2000/2927 label_batches=3
+/Users/williserdman/Documents/school/spring2026/graph_ml/featureless_temporal_benchmark/main.py:290: UserWarning: Split train_eval: skipped primary metric ndcg because target size=1279080 exceeds max_primary_metric_targets=1000000.
+  warnings.warn(
+/Users/williserdman/Documents/school/spring2026/graph_ml/featureless_temporal_benchmark/main.py:307: UserWarning: Split train_eval: skipped AUROC/AP because target size=1279080 exceeds max_supplemental_metric_targets=1000000.
+  warnings.warn(
+Split[val] events=2927 labeled_timestamps=4 empty_label_events=2923 label_batches=4
+Epoch 01 | train_loss=0.6594 train_ndcg=nan train_auroc=nan train_ap=nan val_ndcg=0.0074 val_auroc=0.5091 val_ap=0.3390
+Sampling[stride] kept 2315/57851 (4.0%), est_speedup=24.99x
+Split[test] start events=2315
+Split[test] progress 2000/2315 label_batches=3
+Split[test] events=2315 labeled_timestamps=3 empty_label_events=2312 label_batches=3
+Test ndcg: 0.0095 | AUROC: 0.5121 | AP: 0.3421
+
+=== Dataset: tgbn-trade | Model: dyrep ===
+Sampling[stride] kept 13489/337224 (4.0%), est_speedup=25.00x
+Split[train] start events=13489
+Split[train] progress 2000/13489 label_batches=5
+Split[train] progress 4000/13489 label_batches=9
+Split[train] progress 6000/13489 label_batches=12
+Split[train] progress 8000/13489 label_batches=16
+Split[train] progress 10000/13489 label_batches=19
+Split[train] progress 12000/13489 label_batches=21
+/Users/williserdman/Documents/school/spring2026/graph_ml/featureless_temporal_benchmark/main.py:290: UserWarning: Split train: skipped primary metric ndcg because target size=1279080 exceeds max_primary_metric_targets=1000000.
+  warnings.warn(
+/Users/williserdman/Documents/school/spring2026/graph_ml/featureless_temporal_benchmark/main.py:307: UserWarning: Split train: skipped AUROC/AP because target size=1279080 exceeds max_supplemental_metric_targets=1000000.
+  warnings.warn(
+Split[train] events=13489 labeled_timestamps=23 empty_label_events=13466 label_batches=23
+Sampling[stride] kept 2927/73170 (4.0%), est_speedup=25.00x
+Split[val] start events=2927
+Split[val] progress 2000/2927 label_batches=3
+/Users/williserdman/Documents/school/spring2026/graph_ml/featureless_temporal_benchmark/main.py:290: UserWarning: Split train_eval: skipped primary metric ndcg because target size=1279080 exceeds max_primary_metric_targets=1000000.
+  warnings.warn(
+/Users/williserdman/Documents/school/spring2026/graph_ml/featureless_temporal_benchmark/main.py:307: UserWarning: Split train_eval: skipped AUROC/AP because target size=1279080 exceeds max_supplemental_metric_targets=1000000.
+  warnings.warn(
+Split[val] events=2927 labeled_timestamps=4 empty_label_events=2923 label_batches=4
+Epoch 01 | train_loss=0.2675 train_ndcg=nan train_auroc=nan train_ap=nan val_ndcg=0.0789 val_auroc=0.5932 val_ap=0.3935
+Sampling[stride] kept 2315/57851 (4.0%), est_speedup=24.99x
+Split[test] start events=2315
+Split[test] progress 2000/2315 label_batches=3
+Split[test] events=2315 labeled_timestamps=3 empty_label_events=2312 label_batches=3
+Test ndcg: 0.0817 | AUROC: 0.5729 | AP: 0.3688
+
+=== Dataset: tgbn-trade | Model: evolvegcn ===
+Sampling[stride] kept 13489/337224 (4.0%), est_speedup=25.00x
+Split[train] start events=13489
+Split[train] progress 2000/13489 label_batches=5
+Split[train] progress 4000/13489 label_batches=9
+Split[train] progress 6000/13489 label_batches=12
+Split[train] progress 8000/13489 label_batches=16
+Split[train] progress 10000/13489 label_batches=19
+Split[train] progress 12000/13489 label_batches=21
+/Users/williserdman/Documents/school/spring2026/graph_ml/featureless_temporal_benchmark/main.py:290: UserWarning: Split train: skipped primary metric ndcg because target size=1279080 exceeds max_primary_metric_targets=1000000.
+  warnings.warn(
+/Users/williserdman/Documents/school/spring2026/graph_ml/featureless_temporal_benchmark/main.py:307: UserWarning: Split train: skipped AUROC/AP because target size=1279080 exceeds max_supplemental_metric_targets=1000000.
+  warnings.warn(
+Split[train] events=13489 labeled_timestamps=23 empty_label_events=13466 label_batches=23
+Sampling[stride] kept 2927/73170 (4.0%), est_speedup=25.00x
+Split[val] start events=2927
+Split[val] progress 2000/2927 label_batches=3
+/Users/williserdman/Documents/school/spring2026/graph_ml/featureless_temporal_benchmark/main.py:290: UserWarning: Split train_eval: skipped primary metric ndcg because target size=1279080 exceeds max_primary_metric_targets=1000000.
+  warnings.warn(
+/Users/williserdman/Documents/school/spring2026/graph_ml/featureless_temporal_benchmark/main.py:307: UserWarning: Split train_eval: skipped AUROC/AP because target size=1279080 exceeds max_supplemental_metric_targets=1000000.
+  warnings.warn(
+Split[val] events=2927 labeled_timestamps=4 empty_label_events=2923 label_batches=4
+Epoch 01 | train_loss=0.2210 train_ndcg=nan train_auroc=nan train_ap=nan val_ndcg=0.1851 val_auroc=0.5591 val_ap=0.3922
+Sampling[stride] kept 2315/57851 (4.0%), est_speedup=24.99x
+Split[test] start events=2315
+Split[test] progress 2000/2315 label_batches=3
+Split[test] events=2315 labeled_timestamps=3 empty_label_events=2312 label_batches=3
+Test ndcg: 0.1913 | AUROC: 0.5403 | AP: 0.3560
+
+=== Dataset: tgbn-trade | Model: sage ===
+Sampling[stride] kept 13489/337224 (4.0%), est_speedup=25.00x
+Split[train] start events=13489
+Split[train] progress 2000/13489 label_batches=5
+Split[train] progress 4000/13489 label_batches=9
+Split[train] progress 6000/13489 label_batches=12
+Split[train] progress 8000/13489 label_batches=16
+Split[train] progress 10000/13489 label_batches=19
+Split[train] progress 12000/13489 label_batches=21
+/Users/williserdman/Documents/school/spring2026/graph_ml/featureless_temporal_benchmark/main.py:290: UserWarning: Split train: skipped primary metric ndcg because target size=1279080 exceeds max_primary_metric_targets=1000000.
+  warnings.warn(
+/Users/williserdman/Documents/school/spring2026/graph_ml/featureless_temporal_benchmark/main.py:307: UserWarning: Split train: skipped AUROC/AP because target size=1279080 exceeds max_supplemental_metric_targets=1000000.
+  warnings.warn(
+Split[train] events=13489 labeled_timestamps=23 empty_label_events=13466 label_batches=23
+Sampling[stride] kept 2927/73170 (4.0%), est_speedup=25.00x
+Split[val] start events=2927
+Split[val] progress 2000/2927 label_batches=3
+/Users/williserdman/Documents/school/spring2026/graph_ml/featureless_temporal_benchmark/main.py:290: UserWarning: Split train_eval: skipped primary metric ndcg because target size=1279080 exceeds max_primary_metric_targets=1000000.
+  warnings.warn(
+/Users/williserdman/Documents/school/spring2026/graph_ml/featureless_temporal_benchmark/main.py:307: UserWarning: Split train_eval: skipped AUROC/AP because target size=1279080 exceeds max_supplemental_metric_targets=1000000.
+  warnings.warn(
+Split[val] events=2927 labeled_timestamps=4 empty_label_events=2923 label_batches=4
+Epoch 01 | train_loss=0.3613 train_ndcg=nan train_auroc=nan train_ap=nan val_ndcg=0.0525 val_auroc=0.5183 val_ap=0.3448
+Sampling[stride] kept 2315/57851 (4.0%), est_speedup=24.99x
+Split[test] start events=2315
+Split[test] progress 2000/2315 label_batches=3
+Split[test] events=2315 labeled_timestamps=3 empty_label_events=2312 label_batches=3
+Test ndcg: 0.0559 | AUROC: 0.4995 | AP: 0.3275
+
+=== Dataset: tgbn-genre | Model: tgn ===
+Sampling[stride] kept 500036/12500878 (4.0%), est_speedup=25.00x
+Split[train] start events=20000
+Split[train] progress 2000/20000 label_batches=33
+Split[train] progress 4000/20000 label_batches=61
+Split[train] progress 6000/20000 label_batches=79
+Split[train] progress 8000/20000 label_batches=99
+Split[train] progress 10000/20000 label_batches=117
+Split[train] progress 12000/20000 label_batches=135
+Split[train] progress 14000/20000 label_batches=155
+Split[train] progress 16000/20000 label_batches=174
+Split[train] progress 18000/20000 label_batches=189
+Split[train] progress 20000/20000 label_batches=203
+/Users/williserdman/Documents/school/spring2026/graph_ml/featureless_temporal_benchmark/main.py:290: UserWarning: Split train: skipped primary metric ndcg because target size=3642300 exceeds max_primary_metric_targets=1000000.
+  warnings.warn(
+/Users/williserdman/Documents/school/spring2026/graph_ml/featureless_temporal_benchmark/main.py:307: UserWarning: Split train: skipped AUROC/AP because target size=3642300 exceeds max_supplemental_metric_targets=1000000.
+  warnings.warn(
+Split[train] events=20000 labeled_timestamps=203 empty_label_events=19797 label_batches=203
+Sampling[stride] kept 107151/2678760 (4.0%), est_speedup=25.00x
+Split[val] start events=20000
+Split[val] progress 2000/20000 label_batches=1051
+Split[val] progress 4000/20000 label_batches=1054
+Split[val] progress 6000/20000 label_batches=1057
+Split[val] progress 8000/20000 label_batches=1060
+Split[val] progress 10000/20000 label_batches=1064
+Split[val] progress 12000/20000 label_batches=1067
+Split[val] progress 14000/20000 label_batches=1071
+Split[val] progress 16000/20000 label_batches=1075
+Split[val] progress 18000/20000 label_batches=1078
+Split[val] progress 20000/20000 label_batches=1081
+/Users/williserdman/Documents/school/spring2026/graph_ml/featureless_temporal_benchmark/main.py:290: UserWarning: Split val: skipped primary metric ndcg because target size=96283431 exceeds max_primary_metric_targets=1000000.
+  warnings.warn(
+/Users/williserdman/Documents/school/spring2026/graph_ml/featureless_temporal_benchmark/main.py:307: UserWarning: Split val: skipped AUROC/AP because target size=96283431 exceeds max_supplemental_metric_targets=1000000.
+  warnings.warn(
+/Users/williserdman/Documents/school/spring2026/graph_ml/featureless_temporal_benchmark/main.py:290: UserWarning: Split train_eval: skipped primary metric ndcg because target size=3642300 exceeds max_primary_metric_targets=1000000.
+  warnings.warn(
+/Users/williserdman/Documents/school/spring2026/graph_ml/featureless_temporal_benchmark/main.py:307: UserWarning: Split train_eval: skipped AUROC/AP because target size=3642300 exceeds max_supplemental_metric_targets=1000000.
+  warnings.warn(
+/Users/williserdman/Documents/school/spring2026/graph_ml/featureless_temporal_benchmark/main.py:290: UserWarning: Split val_eval: skipped primary metric ndcg because target size=96283431 exceeds max_primary_metric_targets=1000000.
+  warnings.warn(
+/Users/williserdman/Documents/school/spring2026/graph_ml/featureless_temporal_benchmark/main.py:307: UserWarning: Split val_eval: skipped AUROC/AP because target size=96283431 exceeds max_supplemental_metric_targets=1000000.
+  warnings.warn(
+Split[val] events=20000 labeled_timestamps=35 empty_label_events=19965 label_batches=1081
+Epoch 01 | train_loss=0.1179 train_ndcg=nan train_auroc=nan train_ap=nan val_ndcg=nan val_auroc=nan val_ap=nan
+Sampling[stride] kept 107151/2678757 (4.0%), est_speedup=25.00x
+Split[test] start events=20000
+Split[test] progress 2000/20000 label_batches=132
+Split[test] progress 4000/20000 label_batches=135
+Split[test] progress 6000/20000 label_batches=138
+Split[test] progress 8000/20000 label_batches=140
+Split[test] progress 10000/20000 label_batches=143
+Split[test] progress 12000/20000 label_batches=145
+Split[test] progress 14000/20000 label_batches=148
+Split[test] progress 16000/20000 label_batches=150
+Split[test] progress 18000/20000 label_batches=153
+Split[test] progress 20000/20000 label_batches=155
+/Users/williserdman/Documents/school/spring2026/graph_ml/featureless_temporal_benchmark/main.py:307: UserWarning: Split test: skipped AUROC/AP because target size=18414135 exceeds max_supplemental_metric_targets=1000000.
+  warnings.warn(
+Split[test] events=20000 labeled_timestamps=27 empty_label_events=19973 label_batches=155
+Test ndcg: 0.3237 | AUROC: nan | AP: nan
+
+=== Dataset: tgbn-genre | Model: tgat ===
+TGAT LR override enabled: base_lr=1.00e-03, effective_lr=1.00e-04
+Sampling[stride] kept 500036/12500878 (4.0%), est_speedup=25.00x
+Split[train] start events=20000
+Split[train] progress 2000/20000 label_batches=33
+Split[train] progress 4000/20000 label_batches=61
+Split[train] progress 6000/20000 label_batches=79
+Split[train] progress 8000/20000 label_batches=99
+Split[train] progress 10000/20000 label_batches=117
+Split[train] progress 12000/20000 label_batches=135
+Split[train] progress 14000/20000 label_batches=155
+Split[train] progress 16000/20000 label_batches=174
+Split[train] progress 18000/20000 label_batches=189
+Split[train] progress 20000/20000 label_batches=203
+/Users/williserdman/Documents/school/spring2026/graph_ml/featureless_temporal_benchmark/main.py:290: UserWarning: Split train: skipped primary metric ndcg because target size=3642300 exceeds max_primary_metric_targets=1000000.
+  warnings.warn(
+/Users/williserdman/Documents/school/spring2026/graph_ml/featureless_temporal_benchmark/main.py:307: UserWarning: Split train: skipped AUROC/AP because target size=3642300 exceeds max_supplemental_metric_targets=1000000.
+  warnings.warn(
+Split[train] events=20000 labeled_timestamps=203 empty_label_events=19797 label_batches=203
+Sampling[stride] kept 107151/2678760 (4.0%), est_speedup=25.00x
+Split[val] start events=20000
+Split[val] progress 2000/20000 label_batches=1051
+Split[val] progress 4000/20000 label_batches=1054
+Split[val] progress 6000/20000 label_batches=1057
+Split[val] progress 8000/20000 label_batches=1060
+Split[val] progress 10000/20000 label_batches=1064
+Split[val] progress 12000/20000 label_batches=1067
+Split[val] progress 14000/20000 label_batches=1071
+Split[val] progress 16000/20000 label_batches=1075
+Split[val] progress 18000/20000 label_batches=1078
+Split[val] progress 20000/20000 label_batches=1081
+/Users/williserdman/Documents/school/spring2026/graph_ml/featureless_temporal_benchmark/main.py:290: UserWarning: Split val: skipped primary metric ndcg because target size=96283431 exceeds max_primary_metric_targets=1000000.
+  warnings.warn(
+/Users/williserdman/Documents/school/spring2026/graph_ml/featureless_temporal_benchmark/main.py:307: UserWarning: Split val: skipped AUROC/AP because target size=96283431 exceeds max_supplemental_metric_targets=1000000.
+  warnings.warn(
+/Users/williserdman/Documents/school/spring2026/graph_ml/featureless_temporal_benchmark/main.py:290: UserWarning: Split train_eval: skipped primary metric ndcg because target size=3642300 exceeds max_primary_metric_targets=1000000.
+  warnings.warn(
+/Users/williserdman/Documents/school/spring2026/graph_ml/featureless_temporal_benchmark/main.py:307: UserWarning: Split train_eval: skipped AUROC/AP because target size=3642300 exceeds max_supplemental_metric_targets=1000000.
+  warnings.warn(
+/Users/williserdman/Documents/school/spring2026/graph_ml/featureless_temporal_benchmark/main.py:290: UserWarning: Split val_eval: skipped primary metric ndcg because target size=96283431 exceeds max_primary_metric_targets=1000000.
+  warnings.warn(
+/Users/williserdman/Documents/school/spring2026/graph_ml/featureless_temporal_benchmark/main.py:307: UserWarning: Split val_eval: skipped AUROC/AP because target size=96283431 exceeds max_supplemental_metric_targets=1000000.
+  warnings.warn(
+Split[val] events=20000 labeled_timestamps=35 empty_label_events=19965 label_batches=1081
+Epoch 01 | train_loss=0.4723 train_ndcg=nan train_auroc=nan train_ap=nan val_ndcg=nan val_auroc=nan val_ap=nan
+Sampling[stride] kept 107151/2678757 (4.0%), est_speedup=25.00x
+Split[test] start events=20000
+Split[test] progress 2000/20000 label_batches=132
+Split[test] progress 4000/20000 label_batches=135
+Split[test] progress 6000/20000 label_batches=138
+Split[test] progress 8000/20000 label_batches=140
+Split[test] progress 10000/20000 label_batches=143
+Split[test] progress 12000/20000 label_batches=145
+Split[test] progress 14000/20000 label_batches=148
+Split[test] progress 16000/20000 label_batches=150
+Split[test] progress 18000/20000 label_batches=153
+Split[test] progress 20000/20000 label_batches=155
+/Users/williserdman/Documents/school/spring2026/graph_ml/featureless_temporal_benchmark/main.py:307: UserWarning: Split test: skipped AUROC/AP because target size=18414135 exceeds max_supplemental_metric_targets=1000000.
+  warnings.warn(
+Split[test] events=20000 labeled_timestamps=27 empty_label_events=19973 label_batches=155
+Test ndcg: 0.0061 | AUROC: nan | AP: nan
+
+=== Dataset: tgbn-genre | Model: dyrep ===
+Sampling[stride] kept 500036/12500878 (4.0%), est_speedup=25.00x
+Split[train] start events=20000
+Split[train] progress 2000/20000 label_batches=33
+Split[train] progress 4000/20000 label_batches=61
+Split[train] progress 6000/20000 label_batches=79
+Split[train] progress 8000/20000 label_batches=99
+Split[train] progress 10000/20000 label_batches=117
+Split[train] progress 12000/20000 label_batches=135
+Split[train] progress 14000/20000 label_batches=155
+Split[train] progress 16000/20000 label_batches=174
+Split[train] progress 18000/20000 label_batches=189
+Split[train] progress 20000/20000 label_batches=203
+/Users/williserdman/Documents/school/spring2026/graph_ml/featureless_temporal_benchmark/main.py:290: UserWarning: Split train: skipped primary metric ndcg because target size=3642300 exceeds max_primary_metric_targets=1000000.
+  warnings.warn(
+/Users/williserdman/Documents/school/spring2026/graph_ml/featureless_temporal_benchmark/main.py:307: UserWarning: Split train: skipped AUROC/AP because target size=3642300 exceeds max_supplemental_metric_targets=1000000.
+  warnings.warn(
+Split[train] events=20000 labeled_timestamps=203 empty_label_events=19797 label_batches=203
+Sampling[stride] kept 107151/2678760 (4.0%), est_speedup=25.00x
+Split[val] start events=20000
+Split[val] progress 2000/20000 label_batches=1051
+Split[val] progress 4000/20000 label_batches=1054
+Split[val] progress 6000/20000 label_batches=1057
+Split[val] progress 8000/20000 label_batches=1060
+Split[val] progress 10000/20000 label_batches=1064
+Split[val] progress 12000/20000 label_batches=1067
+Split[val] progress 14000/20000 label_batches=1071
+Split[val] progress 16000/20000 label_batches=1075
+Split[val] progress 18000/20000 label_batches=1078
+Split[val] progress 20000/20000 label_batches=1081
+/Users/williserdman/Documents/school/spring2026/graph_ml/featureless_temporal_benchmark/main.py:290: UserWarning: Split val: skipped primary metric ndcg because target size=96283431 exceeds max_primary_metric_targets=1000000.
+  warnings.warn(
+/Users/williserdman/Documents/school/spring2026/graph_ml/featureless_temporal_benchmark/main.py:307: UserWarning: Split val: skipped AUROC/AP because target size=96283431 exceeds max_supplemental_metric_targets=1000000.
+  warnings.warn(
+/Users/williserdman/Documents/school/spring2026/graph_ml/featureless_temporal_benchmark/main.py:290: UserWarning: Split train_eval: skipped primary metric ndcg because target size=3642300 exceeds max_primary_metric_targets=1000000.
+  warnings.warn(
+/Users/williserdman/Documents/school/spring2026/graph_ml/featureless_temporal_benchmark/main.py:307: UserWarning: Split train_eval: skipped AUROC/AP because target size=3642300 exceeds max_supplemental_metric_targets=1000000.
+  warnings.warn(
+/Users/williserdman/Documents/school/spring2026/graph_ml/featureless_temporal_benchmark/main.py:290: UserWarning: Split val_eval: skipped primary metric ndcg because target size=96283431 exceeds max_primary_metric_targets=1000000.
+  warnings.warn(
+/Users/williserdman/Documents/school/spring2026/graph_ml/featureless_temporal_benchmark/main.py:307: UserWarning: Split val_eval: skipped AUROC/AP because target size=96283431 exceeds max_supplemental_metric_targets=1000000.
+  warnings.warn(
+Split[val] events=20000 labeled_timestamps=35 empty_label_events=19965 label_batches=1081
+Epoch 01 | train_loss=0.1151 train_ndcg=nan train_auroc=nan train_ap=nan val_ndcg=nan val_auroc=nan val_ap=nan
+Sampling[stride] kept 107151/2678757 (4.0%), est_speedup=25.00x
+Split[test] start events=20000
+Split[test] progress 2000/20000 label_batches=132
+Split[test] progress 4000/20000 label_batches=135
+Split[test] progress 6000/20000 label_batches=138
+Split[test] progress 8000/20000 label_batches=140
+Split[test] progress 10000/20000 label_batches=143
+Split[test] progress 12000/20000 label_batches=145
+Split[test] progress 14000/20000 label_batches=148
+Split[test] progress 16000/20000 label_batches=150
+Split[test] progress 18000/20000 label_batches=153
+Split[test] progress 20000/20000 label_batches=155
+/Users/williserdman/Documents/school/spring2026/graph_ml/featureless_temporal_benchmark/main.py:307: UserWarning: Split test: skipped AUROC/AP because target size=18414135 exceeds max_supplemental_metric_targets=1000000.
+  warnings.warn(
+Split[test] events=20000 labeled_timestamps=27 empty_label_events=19973 label_batches=155
+Test ndcg: 0.3279 | AUROC: nan | AP: nan
+
+=== Dataset: tgbn-genre | Model: evolvegcn ===
+Sampling[stride] kept 500036/12500878 (4.0%), est_speedup=25.00x
+Split[train] start events=20000
+Split[train] progress 2000/20000 label_batches=33
+Split[train] progress 4000/20000 label_batches=61
+Split[train] progress 6000/20000 label_batches=79
+Split[train] progress 8000/20000 label_batches=99
+Split[train] progress 10000/20000 label_batches=117
+Split[train] progress 12000/20000 label_batches=135
+Split[train] progress 14000/20000 label_batches=155
+Split[train] progress 16000/20000 label_batches=174
+Split[train] progress 18000/20000 label_batches=189
+Split[train] progress 20000/20000 label_batches=203
+/Users/williserdman/Documents/school/spring2026/graph_ml/featureless_temporal_benchmark/main.py:290: UserWarning: Split train: skipped primary metric ndcg because target size=3642300 exceeds max_primary_metric_targets=1000000.
+  warnings.warn(
+/Users/williserdman/Documents/school/spring2026/graph_ml/featureless_temporal_benchmark/main.py:307: UserWarning: Split train: skipped AUROC/AP because target size=3642300 exceeds max_supplemental_metric_targets=1000000.
+  warnings.warn(
+Split[train] events=20000 labeled_timestamps=203 empty_label_events=19797 label_batches=203
+Sampling[stride] kept 107151/2678760 (4.0%), est_speedup=25.00x
+Split[val] start events=20000
+Split[val] progress 2000/20000 label_batches=1051
+Split[val] progress 4000/20000 label_batches=1054
+Split[val] progress 6000/20000 label_batches=1057
+Split[val] progress 8000/20000 label_batches=1060
+Split[val] progress 10000/20000 label_batches=1064
+Split[val] progress 12000/20000 label_batches=1067
+Split[val] progress 14000/20000 label_batches=1071
+Split[val] progress 16000/20000 label_batches=1075
+Split[val] progress 18000/20000 label_batches=1078
+Split[val] progress 20000/20000 label_batches=1081
+/Users/williserdman/Documents/school/spring2026/graph_ml/featureless_temporal_benchmark/main.py:290: UserWarning: Split val: skipped primary metric ndcg because target size=96283431 exceeds max_primary_metric_targets=1000000.
+  warnings.warn(
+/Users/williserdman/Documents/school/spring2026/graph_ml/featureless_temporal_benchmark/main.py:307: UserWarning: Split val: skipped AUROC/AP because target size=96283431 exceeds max_supplemental_metric_targets=1000000.
+  warnings.warn(
+/Users/williserdman/Documents/school/spring2026/graph_ml/featureless_temporal_benchmark/main.py:290: UserWarning: Split train_eval: skipped primary metric ndcg because target size=3642300 exceeds max_primary_metric_targets=1000000.
+  warnings.warn(
+/Users/williserdman/Documents/school/spring2026/graph_ml/featureless_temporal_benchmark/main.py:307: UserWarning: Split train_eval: skipped AUROC/AP because target size=3642300 exceeds max_supplemental_metric_targets=1000000.
+  warnings.warn(
+/Users/williserdman/Documents/school/spring2026/graph_ml/featureless_temporal_benchmark/main.py:290: UserWarning: Split val_eval: skipped primary metric ndcg because target size=96283431 exceeds max_primary_metric_targets=1000000.
+  warnings.warn(
+/Users/williserdman/Documents/school/spring2026/graph_ml/featureless_temporal_benchmark/main.py:307: UserWarning: Split val_eval: skipped AUROC/AP because target size=96283431 exceeds max_supplemental_metric_targets=1000000.
+  warnings.warn(
+Split[val] events=20000 labeled_timestamps=35 empty_label_events=19965 label_batches=1081
+Epoch 01 | train_loss=0.0845 train_ndcg=nan train_auroc=nan train_ap=nan val_ndcg=nan val_auroc=nan val_ap=nan
+Sampling[stride] kept 107151/2678757 (4.0%), est_speedup=25.00x
+Split[test] start events=20000
+Split[test] progress 2000/20000 label_batches=132
+Split[test] progress 4000/20000 label_batches=135
+Split[test] progress 6000/20000 label_batches=138
+Split[test] progress 8000/20000 label_batches=140
+Split[test] progress 10000/20000 label_batches=143
+Split[test] progress 12000/20000 label_batches=145
+Split[test] progress 14000/20000 label_batches=148
+Split[test] progress 16000/20000 label_batches=150
+Split[test] progress 18000/20000 label_batches=153
+Split[test] progress 20000/20000 label_batches=155
+/Users/williserdman/Documents/school/spring2026/graph_ml/featureless_temporal_benchmark/main.py:307: UserWarning: Split test: skipped AUROC/AP because target size=18414135 exceeds max_supplemental_metric_targets=1000000.
+  warnings.warn(
+Split[test] events=20000 labeled_timestamps=27 empty_label_events=19973 label_batches=155
+Test ndcg: 0.3371 | AUROC: nan | AP: nan
+
+=== Dataset: tgbn-genre | Model: sage ===
+Sampling[stride] kept 500036/12500878 (4.0%), est_speedup=25.00x
+Split[train] start events=20000
+Split[train] progress 2000/20000 label_batches=33
+Split[train] progress 4000/20000 label_batches=61
+Split[train] progress 6000/20000 label_batches=79
+Split[train] progress 8000/20000 label_batches=99
+Split[train] progress 10000/20000 label_batches=117
+Split[train] progress 12000/20000 label_batches=135
+Split[train] progress 14000/20000 label_batches=155
+Split[train] progress 16000/20000 label_batches=174
+Split[train] progress 18000/20000 label_batches=189
+Split[train] progress 20000/20000 label_batches=203
+/Users/williserdman/Documents/school/spring2026/graph_ml/featureless_temporal_benchmark/main.py:290: UserWarning: Split train: skipped primary metric ndcg because target size=3642300 exceeds max_primary_metric_targets=1000000.
+  warnings.warn(
+/Users/williserdman/Documents/school/spring2026/graph_ml/featureless_temporal_benchmark/main.py:307: UserWarning: Split train: skipped AUROC/AP because target size=3642300 exceeds max_supplemental_metric_targets=1000000.
+  warnings.warn(
+Split[train] events=20000 labeled_timestamps=203 empty_label_events=19797 label_batches=203
+Sampling[stride] kept 107151/2678760 (4.0%), est_speedup=25.00x
+Split[val] start events=20000
+Split[val] progress 2000/20000 label_batches=1051
+Split[val] progress 4000/20000 label_batches=1054
+Split[val] progress 6000/20000 label_batches=1057
+Split[val] progress 8000/20000 label_batches=1060
+Split[val] progress 10000/20000 label_batches=1064
+Split[val] progress 12000/20000 label_batches=1067
+Split[val] progress 14000/20000 label_batches=1071
+Split[val] progress 16000/20000 label_batches=1075
+Split[val] progress 18000/20000 label_batches=1078
+Split[val] progress 20000/20000 label_batches=1081
+/Users/williserdman/Documents/school/spring2026/graph_ml/featureless_temporal_benchmark/main.py:290: UserWarning: Split val: skipped primary metric ndcg because target size=96283431 exceeds max_primary_metric_targets=1000000.
+  warnings.warn(
+/Users/williserdman/Documents/school/spring2026/graph_ml/featureless_temporal_benchmark/main.py:307: UserWarning: Split val: skipped AUROC/AP because target size=96283431 exceeds max_supplemental_metric_targets=1000000.
+  warnings.warn(
+/Users/williserdman/Documents/school/spring2026/graph_ml/featureless_temporal_benchmark/main.py:290: UserWarning: Split train_eval: skipped primary metric ndcg because target size=3642300 exceeds max_primary_metric_targets=1000000.
+  warnings.warn(
+/Users/williserdman/Documents/school/spring2026/graph_ml/featureless_temporal_benchmark/main.py:307: UserWarning: Split train_eval: skipped AUROC/AP because target size=3642300 exceeds max_supplemental_metric_targets=1000000.
+  warnings.warn(
+/Users/williserdman/Documents/school/spring2026/graph_ml/featureless_temporal_benchmark/main.py:290: UserWarning: Split val_eval: skipped primary metric ndcg because target size=96283431 exceeds max_primary_metric_targets=1000000.
+  warnings.warn(
+/Users/williserdman/Documents/school/spring2026/graph_ml/featureless_temporal_benchmark/main.py:307: UserWarning: Split val_eval: skipped AUROC/AP because target size=96283431 exceeds max_supplemental_metric_targets=1000000.
+  warnings.warn(
+Split[val] events=20000 labeled_timestamps=35 empty_label_events=19965 label_batches=1081
+Epoch 01 | train_loss=0.0636 train_ndcg=nan train_auroc=nan train_ap=nan val_ndcg=nan val_auroc=nan val_ap=nan
+Sampling[stride] kept 107151/2678757 (4.0%), est_speedup=25.00x
+Split[test] start events=20000
+Split[test] progress 2000/20000 label_batches=132
+Split[test] progress 4000/20000 label_batches=135
+Split[test] progress 6000/20000 label_batches=138
+Split[test] progress 8000/20000 label_batches=140
+Split[test] progress 10000/20000 label_batches=143
+Split[test] progress 12000/20000 label_batches=145
+Split[test] progress 14000/20000 label_batches=148
+Split[test] progress 16000/20000 label_batches=150
+Split[test] progress 18000/20000 label_batches=153
+Split[test] progress 20000/20000 label_batches=155
+/Users/williserdman/Documents/school/spring2026/graph_ml/featureless_temporal_benchmark/main.py:307: UserWarning: Split test: skipped AUROC/AP because target size=18414135 exceeds max_supplemental_metric_targets=1000000.
+  warnings.warn(
+Split[test] events=20000 labeled_timestamps=27 empty_label_events=19973 label_batches=155
+Test ndcg: 0.3432 | AUROC: nan | AP: nan

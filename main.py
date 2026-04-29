@@ -1,6 +1,8 @@
 import argparse
 import csv
 from dataclasses import dataclass
+import gc
+import os
 from pathlib import Path
 import warnings
 
@@ -80,6 +82,30 @@ def _fmt_metric(value: float) -> str:
     if value != value:
         return "nan"
     return f"{value:.4f}"
+
+
+def _subsample_targets_for_metrics(
+    y_true: Tensor, y_pred: Tensor, max_targets: int
+) -> tuple[Tensor, Tensor, bool]:
+    if max_targets <= 0 or int(y_true.numel()) <= max_targets:
+        return y_true, y_pred, False
+
+    num_rows = int(y_true.size(0)) if y_true.dim() > 0 else 1
+    row_width = int(y_true[0].numel()) if num_rows > 0 else 1
+    row_width = max(1, row_width)
+
+    keep_rows = max(
+        1,
+        min(
+            num_rows,
+            max_targets // row_width if max_targets // row_width > 0 else 1,
+        ),
+    )
+    if keep_rows >= num_rows:
+        return y_true, y_pred, False
+
+    idx = torch.linspace(0, num_rows - 1, steps=keep_rows, dtype=torch.long)
+    return y_true[idx], y_pred[idx], True
 
 
 def append_results_row(*, file_path: Path, row: dict[str, object]) -> None:
@@ -178,6 +204,9 @@ def run_split(
     grad_clip_norm: float,
     split_name: str,
     log_sampling: bool,
+    progress_every: int,
+    max_primary_metric_targets: int,
+    max_supplemental_metric_targets: int,
     feature_engine: SyntheticFeatureEngine,
     node_feature_generator: NodeFeatureGenerator | None,
 ) -> SplitOutput:
@@ -211,7 +240,11 @@ def run_split(
     labeled_timestamps = 0
     empty_label_events = 0
 
-    for idx in edge_idx.tolist():
+    total_events = int(edge_idx.numel())
+    if progress_every > 0:
+        print(f"Split[{split_name}] start events={total_events}", flush=True)
+
+    for step, idx in enumerate(edge_idx.tolist(), start=1):
         cur_t = int(data.t[idx].item())
         if node_feature_generator is not None:
             node_features = node_feature_generator.node_features_for_time(current_time=cur_t)
@@ -258,21 +291,50 @@ def run_split(
         if node_feature_generator is not None:
             node_feature_generator.update_state(src=src_i, dst=dst_i, current_time=cur_t)
 
+        if progress_every > 0 and step % progress_every == 0:
+            print(
+                f"Split[{split_name}] progress {step}/{total_events} "
+                f"label_batches={total_label_batches}",
+                flush=True,
+            )
+
     if y_true_all:
         y_true_cat = torch.cat(
             y_true_all, dim=0
         )  # predictions concatenated into one large tensor
         y_pred_cat = torch.cat(y_pred_all, dim=0)
+        primary_cap = max_primary_metric_targets if split_name != "test" else 0
+        y_true_primary, y_pred_primary, sampled_primary = _subsample_targets_for_metrics(
+            y_true=y_true_cat,
+            y_pred=y_pred_cat,
+            max_targets=primary_cap,
+        )
         metric_value = float(
             evaluator.eval(  # evaluation
                 {
-                    "y_true": y_true_cat,
-                    "y_pred": y_pred_cat,
+                    "y_true": y_true_primary,
+                    "y_pred": y_pred_primary,
                     "eval_metric": [eval_metric],
                 }
             )[eval_metric]
         )
-        auroc, ap = compute_auroc_ap(y_true=y_true_cat, y_pred=y_pred_cat)
+        if sampled_primary:
+            warnings.warn(
+                f"Split {split_name}: primary metric {eval_metric} computed on subsampled rows "
+                f"(original_targets={int(y_true_cat.numel())}, sampled_targets={int(y_true_primary.numel())})."
+            )
+
+        y_true_supp, y_pred_supp, sampled_supp = _subsample_targets_for_metrics(
+            y_true=y_true_cat,
+            y_pred=y_pred_cat,
+            max_targets=max_supplemental_metric_targets,
+        )
+        auroc, ap = compute_auroc_ap(y_true=y_true_supp, y_pred=y_pred_supp)
+        if sampled_supp:
+            warnings.warn(
+                f"Split {split_name}: AUROC/AP computed on subsampled rows "
+                f"(original_targets={int(y_true_cat.numel())}, sampled_targets={int(y_true_supp.numel())})."
+            )
     else:
         if optimizer is not None:
             warnings.warn(
@@ -337,12 +399,20 @@ def train_dataset(
     context_size: int,
     node2vec_p: float,
     node2vec_q: float,
+    gae_refresh_interval: int,
+    gae_steps: int,
+    gae_lr: float,
+    gae_max_edges: int,
+    gae_batch_size: int,
     node_feature_mode: str,
     node_feature_dim: int,
     node_feature_noise_std: float,
     node_feature_noise_seed: int,
     grad_clip_norm: float,
     tgat_lr_mult: float,
+    progress_every: int,
+    max_primary_metric_targets: int,
+    max_supplemental_metric_targets: int,
     results_csv: Path | None,
 ) -> dict[str, object]:
     print(f"\n=== Dataset: {dataset_name} | Model: {model_name} ===")
@@ -396,6 +466,11 @@ def train_dataset(
                 context_size=context_size,
                 node2vec_p=node2vec_p,
                 node2vec_q=node2vec_q,
+                gae_refresh_interval=gae_refresh_interval,
+                gae_steps=gae_steps,
+                gae_lr=gae_lr,
+                gae_max_edges=gae_max_edges,
+                gae_batch_size=gae_batch_size,
             )
         )
 
@@ -448,6 +523,9 @@ def train_dataset(
             grad_clip_norm=grad_clip_norm,
             split_name="train",
             log_sampling=(epoch == 1),
+            progress_every=progress_every,
+            max_primary_metric_targets=max_primary_metric_targets,
+            max_supplemental_metric_targets=max_supplemental_metric_targets,
             feature_engine=feature_engine,
             node_feature_generator=node_feature_generator,
         )
@@ -472,6 +550,9 @@ def train_dataset(
                 grad_clip_norm=0.0,
                 split_name="val",
                 log_sampling=(epoch == 1),
+                progress_every=progress_every,
+                max_primary_metric_targets=max_primary_metric_targets,
+                max_supplemental_metric_targets=max_supplemental_metric_targets,
                 feature_engine=feature_engine,
                 node_feature_generator=node_feature_generator,
             )
@@ -513,6 +594,9 @@ def train_dataset(
             grad_clip_norm=0.0,
             split_name="train_eval",
             log_sampling=False,
+            progress_every=0,
+            max_primary_metric_targets=max_primary_metric_targets,
+            max_supplemental_metric_targets=max_supplemental_metric_targets,
             feature_engine=feature_engine,
             node_feature_generator=node_feature_generator,
         )
@@ -534,6 +618,9 @@ def train_dataset(
             grad_clip_norm=0.0,
             split_name="val_eval",
             log_sampling=False,
+            progress_every=0,
+            max_primary_metric_targets=max_primary_metric_targets,
+            max_supplemental_metric_targets=max_supplemental_metric_targets,
             feature_engine=feature_engine,
             node_feature_generator=node_feature_generator,
         )
@@ -555,6 +642,9 @@ def train_dataset(
             grad_clip_norm=0.0,
             split_name="test",
             log_sampling=True,
+            progress_every=progress_every,
+            max_primary_metric_targets=max_primary_metric_targets,
+            max_supplemental_metric_targets=max_supplemental_metric_targets,
             feature_engine=feature_engine,
             node_feature_generator=node_feature_generator,
         )
@@ -744,6 +834,36 @@ def parse_args() -> argparse.Namespace:
         help="Node2Vec in-out parameter q for node-initialization walk features.",
     )
     parser.add_argument(
+        "--gae-refresh-interval",
+        type=int,
+        default=512,
+        help="For --node-feature-mode=snapshot_gae, refresh embeddings every N edge updates.",
+    )
+    parser.add_argument(
+        "--gae-steps",
+        type=int,
+        default=8,
+        help="For --node-feature-mode=snapshot_gae, optimization steps per refresh.",
+    )
+    parser.add_argument(
+        "--gae-lr",
+        type=float,
+        default=0.05,
+        help="For --node-feature-mode=snapshot_gae, optimizer learning rate.",
+    )
+    parser.add_argument(
+        "--gae-max-edges",
+        type=int,
+        default=50000,
+        help="For --node-feature-mode=snapshot_gae, cap edges used per refresh (<=0 disables cap).",
+    )
+    parser.add_argument(
+        "--gae-batch-size",
+        type=int,
+        default=4096,
+        help="For --node-feature-mode=snapshot_gae, positive edges sampled per optimization step.",
+    )
+    parser.add_argument(
         "--node-feature-mode",
         type=str,
         default="none",
@@ -753,6 +873,7 @@ def parse_args() -> argparse.Namespace:
             "snapshot_pagerank",
             "snapshot_node2vec",
             "snapshot_deepwalk",
+            "snapshot_gae",
         ],
         help="Optional node initialization feature source; 'none' disables node-feature injection.",
     )
@@ -799,49 +920,113 @@ def parse_args() -> argparse.Namespace:
         choices=["cpu", "cuda"],
         help="Device to use.",
     )
+    parser.add_argument(
+        "--continue-on-error",
+        action="store_true",
+        help="Continue to the next dataset/model pair if a run errors.",
+    )
+    parser.add_argument(
+        "--progress-every",
+        type=int,
+        default=2000,
+        help="Print split progress every N processed events (<=0 disables).",
+    )
+    parser.add_argument(
+        "--max-supplemental-metric-targets",
+        type=int,
+        default=1000000,
+        help="Compute AUROC/AP on a deterministic subsample when y_true target count exceeds this threshold (<=0 disables subsampling).",
+    )
+    parser.add_argument(
+        "--max-primary-metric-targets",
+        type=int,
+        default=1000000,
+        help="Compute primary metric (non-test splits only) on a deterministic subsample when y_true target count exceeds this threshold (<=0 disables subsampling).",
+    )
     return parser.parse_args()
 
 
+def _is_semaphore_related_error(exc: Exception) -> bool:
+    text = str(exc).lower()
+    return ("semaphore" in text) or ("resource_tracker" in text)
+
+
 def main() -> None:
+    # Ensure warning filters are inherited by subprocesses spawned by libraries.
+    existing_pywarn = os.environ.get("PYTHONWARNINGS", "")
+    suppress_spec = "ignore:resource_tracker:UserWarning"
+    if suppress_spec not in existing_pywarn:
+        os.environ["PYTHONWARNINGS"] = (
+            suppress_spec if not existing_pywarn else f"{existing_pywarn},{suppress_spec}"
+        )
+
+    warnings.filterwarnings(
+        "ignore",
+        message=r"resource_tracker: There appear to be .* leaked semaphore objects.*",
+    )
+    warnings.filterwarnings(
+        "ignore",
+        category=UserWarning,
+        module=r"multiprocessing\.resource_tracker",
+    )
+
     args = parse_args()
     device = torch.device(args.device)
     print(f"Using device: {device}")
 
     for dataset_name in args.datasets:
         for model_name in args.models:
-            train_dataset(
-                dataset_name=dataset_name,
-                model_name=model_name,
-                root=args.root,
-                epochs=args.epochs,
-                lr=args.lr,
-                memory_dim=args.memory_dim,
-                time_dim=args.time_dim,
-                max_events=args.max_events,
-                device=device,
-                tgat_heads=args.tgat_heads,
-                temporal_sampling=args.temporal_sampling,
-                temporal_stride=args.temporal_stride,
-                temporal_ratio=args.temporal_ratio,
-                temporal_seed=args.temporal_seed,
-                feature_mode=args.feature_mode,
-                feature_dim=args.feature_dim,
-                noise_std=args.noise_std,
-                noise_seed=args.noise_seed,
-                embedding_dim=args.embedding_dim,
-                walk_length=args.walk_length,
-                walks_per_node=args.walks_per_node,
-                context_size=args.context_size,
-                node2vec_p=args.node2vec_p,
-                node2vec_q=args.node2vec_q,
-                node_feature_mode=args.node_feature_mode,
-                node_feature_dim=args.node_feature_dim,
-                node_feature_noise_std=args.node_feature_noise_std,
-                node_feature_noise_seed=args.node_feature_noise_seed,
-                grad_clip_norm=args.grad_clip_norm,
-                tgat_lr_mult=args.tgat_lr_mult,
-                results_csv=args.results_csv,
-            )
+            try:
+                train_dataset(
+                    dataset_name=dataset_name,
+                    model_name=model_name,
+                    root=args.root,
+                    epochs=args.epochs,
+                    lr=args.lr,
+                    memory_dim=args.memory_dim,
+                    time_dim=args.time_dim,
+                    max_events=args.max_events,
+                    device=device,
+                    tgat_heads=args.tgat_heads,
+                    temporal_sampling=args.temporal_sampling,
+                    temporal_stride=args.temporal_stride,
+                    temporal_ratio=args.temporal_ratio,
+                    temporal_seed=args.temporal_seed,
+                    feature_mode=args.feature_mode,
+                    feature_dim=args.feature_dim,
+                    noise_std=args.noise_std,
+                    noise_seed=args.noise_seed,
+                    embedding_dim=args.embedding_dim,
+                    walk_length=args.walk_length,
+                    walks_per_node=args.walks_per_node,
+                    context_size=args.context_size,
+                    node2vec_p=args.node2vec_p,
+                    node2vec_q=args.node2vec_q,
+                    gae_refresh_interval=args.gae_refresh_interval,
+                    gae_steps=args.gae_steps,
+                    gae_lr=args.gae_lr,
+                    gae_max_edges=args.gae_max_edges,
+                    gae_batch_size=args.gae_batch_size,
+                    node_feature_mode=args.node_feature_mode,
+                    node_feature_dim=args.node_feature_dim,
+                    node_feature_noise_std=args.node_feature_noise_std,
+                    node_feature_noise_seed=args.node_feature_noise_seed,
+                    grad_clip_norm=args.grad_clip_norm,
+                    tgat_lr_mult=args.tgat_lr_mult,
+                    progress_every=args.progress_every,
+                    max_primary_metric_targets=args.max_primary_metric_targets,
+                    max_supplemental_metric_targets=args.max_supplemental_metric_targets,
+                    results_csv=args.results_csv,
+                )
+            except Exception as exc:
+                if _is_semaphore_related_error(exc) or args.continue_on_error:
+                    warnings.warn(
+                        "Run failed and will be skipped: "
+                        f"dataset={dataset_name}, model={model_name}, error={exc}"
+                    )
+                    gc.collect()
+                    continue
+                raise
 
 
 if __name__ == "__main__":

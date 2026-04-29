@@ -3,13 +3,22 @@ from __future__ import annotations
 import argparse
 import csv
 from pathlib import Path
+import warnings
 
 import matplotlib.pyplot as plt
 import numpy as np
 
 DEFAULT_DATASETS = ["tgbn-trade", "tgbn-genre"]
 DEFAULT_MODELS = ["tgn", "tgat", "dyrep", "evolvegcn", "sage"]
-VALID_MODES = {"full", "unweighted_ones", "gaussian_noise", "temporal_delta"}
+EDGE_MODES = ["full", "unweighted_ones", "gaussian_noise", "temporal_delta"]
+NODE_MODES = [
+    "none",
+    "gaussian_noise",
+    "snapshot_pagerank",
+    "snapshot_gae",
+    "snapshot_node2vec",
+    "snapshot_deepwalk",
+]
 
 OLD_FIELDS = [
     "dataset",
@@ -157,28 +166,45 @@ def parse_results_rows(path: Path) -> list[dict[str, str]]:
             else:
                 continue
 
-            if row.get("feature_mode") not in VALID_MODES:
-                continue
+            row.setdefault("feature_mode", "full")
+            row.setdefault("node_feature_mode", "none")
             rows.append(row)
 
     return rows
 
 
-def select_rows_by_key(
+def select_rows(
     rows: list[dict[str, str]],
     *,
+    ablation_kind: str,
+    variant_modes: list[str],
+    fixed_feature_mode: str,
+    fixed_node_feature_mode: str,
     metric_key: str,
     max_events: int | None,
 ) -> dict[tuple[str, str, str], dict[str, str]]:
     selected: dict[tuple[str, str, str], dict[str, str]] = {}
 
     for row in rows:
-        if max_events is not None:
-            row_events = row.get("max_events", "")
-            if str(max_events) != str(row_events):
-                continue
+        if max_events is not None and str(max_events) != str(row.get("max_events", "")):
+            continue
 
-        key = (row["dataset"], row["model"], row["feature_mode"])
+        feature_mode = row.get("feature_mode", "full")
+        node_mode = row.get("node_feature_mode", "none")
+
+        if ablation_kind == "edge":
+            if node_mode != fixed_node_feature_mode:
+                continue
+            variant = feature_mode
+        else:
+            if feature_mode != fixed_feature_mode:
+                continue
+            variant = node_mode
+
+        if variant not in variant_modes:
+            continue
+
+        key = (row["dataset"], row["model"], variant)
         current = selected.get(key)
         if current is None:
             selected[key] = row
@@ -186,7 +212,6 @@ def select_rows_by_key(
 
         cur_val = to_float(current.get(metric_key, "nan"))
         new_val = to_float(row.get(metric_key, "nan"))
-
         cur_finite = np.isfinite(cur_val)
         new_finite = np.isfinite(new_val)
         if new_finite and not cur_finite:
@@ -198,10 +223,68 @@ def select_rows_by_key(
     return selected
 
 
+def present_variant_modes(
+    rows: list[dict[str, str]],
+    *,
+    ablation_kind: str,
+    candidate_modes: list[str],
+    fixed_feature_mode: str,
+    fixed_node_feature_mode: str,
+    max_events: int | None,
+) -> list[str]:
+    present: list[str] = []
+    seen = set()
+    for row in rows:
+        if max_events is not None and str(max_events) != str(row.get("max_events", "")):
+            continue
+
+        feature_mode = row.get("feature_mode", "full")
+        node_mode = row.get("node_feature_mode", "none")
+
+        if ablation_kind == "edge":
+            if node_mode != fixed_node_feature_mode:
+                continue
+            mode = feature_mode
+        else:
+            if feature_mode != fixed_feature_mode:
+                continue
+            mode = node_mode
+
+        if mode in candidate_modes and mode not in seen:
+            seen.add(mode)
+            present.append(mode)
+    return present
+
+
+def _label_for_mode(ablation_kind: str, mode: str) -> str:
+    if ablation_kind == "edge":
+        mapping = {
+            "full": "Edge: full",
+            "unweighted_ones": "Edge: ones",
+            "gaussian_noise": "Edge: noise",
+            "temporal_delta": "Edge: delta-t",
+        }
+        return mapping.get(mode, mode)
+
+    mapping = {
+        "none": "Node-init: none",
+        "gaussian_noise": "Node-init: noise",
+        "snapshot_pagerank": "Node-init: pagerank",
+        "snapshot_gae": "Node-init: GAE",
+        "snapshot_node2vec": "Node-init: node2vec",
+        "snapshot_deepwalk": "Node-init: deepwalk",
+    }
+    return mapping.get(mode, mode)
+
+
 def plot_single_metric(
     *,
     datasets: list[str],
     metric: str,
+    ablation_kind: str,
+    variant_modes: list[str],
+    fixed_feature_mode: str,
+    fixed_node_feature_mode: str,
     selected: dict[tuple[str, str, str], dict[str, str]],
     output: Path,
 ) -> None:
@@ -216,19 +299,18 @@ def plot_single_metric(
     if len(datasets) == 1:
         axes = [axes]
 
-    for ax, dataset in zip(axes, datasets):
-        full_vals: list[float] = []
-        noise_vals: list[float] = []
-        for model in DEFAULT_MODELS:
-            full_row = selected.get((dataset, model, "full"))
-            noise_row = selected.get((dataset, model, "gaussian_noise"))
-            full_vals.append(float("nan") if full_row is None else to_float(full_row.get(metric_key, "nan")))
-            noise_vals.append(float("nan") if noise_row is None else to_float(noise_row.get(metric_key, "nan")))
+    width = 0.82 / max(1, len(variant_modes))
+    x = np.arange(len(DEFAULT_MODELS))
 
-        x = np.arange(len(DEFAULT_MODELS))
-        width = 0.38
-        ax.bar(x - width / 2, full_vals, width=width, label="Full Features")
-        ax.bar(x + width / 2, noise_vals, width=width, label="Gaussian Noise")
+    for ax, dataset in zip(axes, datasets):
+        for i, variant in enumerate(variant_modes):
+            vals: list[float] = []
+            for model in DEFAULT_MODELS:
+                row = selected.get((dataset, model, variant))
+                vals.append(float("nan") if row is None else to_float(row.get(metric_key, "nan")))
+            offset = (i - (len(variant_modes) - 1) / 2.0) * width
+            ax.bar(x + offset, vals, width=width, label=_label_for_mode(ablation_kind, variant))
+
         ax.set_xticks(x)
         ax.set_xticklabels([m.upper() for m in DEFAULT_MODELS])
         ax.set_title(dataset)
@@ -237,8 +319,13 @@ def plot_single_metric(
 
     axes[0].set_ylabel(metric.upper())
     handles, labels = axes[0].get_legend_handles_labels()
-    fig.legend(handles, labels, loc="upper center", ncol=2, frameon=False, bbox_to_anchor=(0.5, 1.02))
-    fig.suptitle(f"Feature Ablation: Full vs Gaussian Noise ({metric.upper()})", y=1.08)
+    fig.legend(handles, labels, loc="upper center", ncol=min(3, len(variant_modes)), frameon=False, bbox_to_anchor=(0.5, 1.02))
+
+    if ablation_kind == "edge":
+        title = f"Edge-Message Ablation ({metric.upper()}) | fixed node_feature_mode={fixed_node_feature_mode}"
+    else:
+        title = f"Node-Initialization Ablation ({metric.upper()}) | fixed feature_mode={fixed_feature_mode}"
+    fig.suptitle(title, y=1.08)
 
     output.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(output, dpi=180, bbox_inches="tight")
@@ -247,6 +334,10 @@ def plot_single_metric(
 def plot_all_metrics(
     *,
     datasets: list[str],
+    ablation_kind: str,
+    variant_modes: list[str],
+    fixed_feature_mode: str,
+    fixed_node_feature_mode: str,
     selected: dict[tuple[str, str, str], dict[str, str]],
     output: Path,
 ) -> None:
@@ -254,29 +345,28 @@ def plot_all_metrics(
     fig, axes = plt.subplots(
         len(metrics),
         len(datasets),
-        figsize=(6 * len(datasets), 3.8 * len(metrics)),
+        figsize=(6 * len(datasets), 3.9 * len(metrics)),
         sharex=True,
         constrained_layout=True,
     )
     if len(datasets) == 1:
         axes = np.array(axes).reshape(len(metrics), 1)
 
+    width = 0.82 / max(1, len(variant_modes))
+    x = np.arange(len(DEFAULT_MODELS))
+
     for r, metric in enumerate(metrics):
         metric_key = metric_column(metric)
         for c, dataset in enumerate(datasets):
             ax = axes[r, c]
-            full_vals: list[float] = []
-            noise_vals: list[float] = []
-            for model in DEFAULT_MODELS:
-                full_row = selected.get((dataset, model, "full"))
-                noise_row = selected.get((dataset, model, "gaussian_noise"))
-                full_vals.append(float("nan") if full_row is None else to_float(full_row.get(metric_key, "nan")))
-                noise_vals.append(float("nan") if noise_row is None else to_float(noise_row.get(metric_key, "nan")))
+            for i, variant in enumerate(variant_modes):
+                vals: list[float] = []
+                for model in DEFAULT_MODELS:
+                    row = selected.get((dataset, model, variant))
+                    vals.append(float("nan") if row is None else to_float(row.get(metric_key, "nan")))
+                offset = (i - (len(variant_modes) - 1) / 2.0) * width
+                ax.bar(x + offset, vals, width=width, label=_label_for_mode(ablation_kind, variant))
 
-            x = np.arange(len(DEFAULT_MODELS))
-            width = 0.38
-            ax.bar(x - width / 2, full_vals, width=width, label="Full Features")
-            ax.bar(x + width / 2, noise_vals, width=width, label="Gaussian Noise")
             ax.set_xticks(x)
             ax.set_xticklabels([m.upper() for m in DEFAULT_MODELS])
             if r == 0:
@@ -286,20 +376,32 @@ def plot_all_metrics(
             ax.grid(axis="y", alpha=0.2)
 
     handles, labels = axes[0, 0].get_legend_handles_labels()
-    fig.legend(handles, labels, loc="upper center", ncol=2, frameon=False, bbox_to_anchor=(0.5, 1.02))
-    fig.suptitle("Feature Ablation: Full vs Gaussian Noise (NDCG, AP, AUROC)", y=1.06)
+    fig.legend(handles, labels, loc="upper center", ncol=min(3, len(variant_modes)), frameon=False, bbox_to_anchor=(0.5, 1.02))
+
+    if ablation_kind == "edge":
+        title = f"Edge-Message Ablation (NDCG, AP, AUROC) | fixed node_feature_mode={fixed_node_feature_mode}"
+    else:
+        title = f"Node-Initialization Ablation (NDCG, AP, AUROC) | fixed feature_mode={fixed_feature_mode}"
+    fig.suptitle(title, y=1.06)
 
     output.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(output, dpi=180, bbox_inches="tight")
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Plot full-vs-noise baseline comparison.")
+    parser = argparse.ArgumentParser(description="Plot edge-message or node-initialization ablation results.")
     parser.add_argument(
         "--results-csv",
         type=Path,
         default=Path("results/baseline_results.csv"),
         help="CSV produced by main.py",
+    )
+    parser.add_argument(
+        "--ablation-kind",
+        type=str,
+        default="edge",
+        choices=["edge", "node"],
+        help="Which pathway is ablated in the figure.",
     )
     parser.add_argument(
         "--metric",
@@ -315,6 +417,18 @@ def main() -> None:
         help="Optional filter so only rows with this max_events value are plotted.",
     )
     parser.add_argument(
+        "--fixed-feature-mode",
+        type=str,
+        default="full",
+        help="For node ablations: keep rows with this feature_mode.",
+    )
+    parser.add_argument(
+        "--fixed-node-feature-mode",
+        type=str,
+        default="none",
+        help="For edge ablations: keep rows with this node_feature_mode.",
+    )
+    parser.add_argument(
         "--datasets",
         nargs="+",
         default=DEFAULT_DATASETS,
@@ -323,7 +437,7 @@ def main() -> None:
     parser.add_argument(
         "--output",
         type=Path,
-        default=Path("results/full_vs_noise_drop.png"),
+        default=Path("results/ablation_plot.png"),
         help="Output figure path.",
     )
     args = parser.parse_args()
@@ -335,35 +449,67 @@ def main() -> None:
     if not rows:
         raise RuntimeError("No parseable rows found in results CSV.")
 
-    selected = select_rows_by_key(rows, metric_key="test_ndcg", max_events=args.max_events)
+    candidate_modes = EDGE_MODES if args.ablation_kind == "edge" else NODE_MODES
+    variant_modes = present_variant_modes(
+        rows,
+        ablation_kind=args.ablation_kind,
+        candidate_modes=candidate_modes,
+        fixed_feature_mode=args.fixed_feature_mode,
+        fixed_node_feature_mode=args.fixed_node_feature_mode,
+        max_events=args.max_events,
+    )
+    if not variant_modes:
+        raise RuntimeError(
+            "No rows match the requested ablation/fixed-mode filters. "
+            f"ablation_kind={args.ablation_kind}, "
+            f"fixed_feature_mode={args.fixed_feature_mode}, "
+            f"fixed_node_feature_mode={args.fixed_node_feature_mode}, "
+            f"max_events={args.max_events}."
+        )
+    if len(variant_modes) == 1:
+        warnings.warn(
+            f"Only one variant mode is present in filtered data: {variant_modes[0]}. "
+            "The plot will show a single series."
+        )
+
+    selected = select_rows(
+        rows,
+        ablation_kind=args.ablation_kind,
+        variant_modes=variant_modes,
+        fixed_feature_mode=args.fixed_feature_mode,
+        fixed_node_feature_mode=args.fixed_node_feature_mode,
+        metric_key="test_ndcg",
+        max_events=args.max_events,
+    )
 
     if args.metric == "all":
-        plot_all_metrics(datasets=args.datasets, selected=selected, output=args.output)
+        plot_all_metrics(
+            datasets=args.datasets,
+            ablation_kind=args.ablation_kind,
+            variant_modes=variant_modes,
+            fixed_feature_mode=args.fixed_feature_mode,
+            fixed_node_feature_mode=args.fixed_node_feature_mode,
+            selected=selected,
+            output=args.output,
+        )
     else:
         plot_single_metric(
             datasets=args.datasets,
             metric=args.metric,
+            ablation_kind=args.ablation_kind,
+            variant_modes=variant_modes,
+            fixed_feature_mode=args.fixed_feature_mode,
+            fixed_node_feature_mode=args.fixed_node_feature_mode,
             selected=selected,
             output=args.output,
         )
 
     print(f"Saved chart: {args.output}")
-
-    for dataset in args.datasets:
-        print(f"\n{dataset} values:")
-        for model in DEFAULT_MODELS:
-            full_row = selected.get((dataset, model, "full"))
-            noise_row = selected.get((dataset, model, "gaussian_noise"))
-            ndcg_full = float("nan") if full_row is None else to_float(full_row.get("test_ndcg", "nan"))
-            ndcg_noise = float("nan") if noise_row is None else to_float(noise_row.get("test_ndcg", "nan"))
-            ap_full = float("nan") if full_row is None else to_float(full_row.get("test_ap", "nan"))
-            ap_noise = float("nan") if noise_row is None else to_float(noise_row.get("test_ap", "nan"))
-            auroc_full = float("nan") if full_row is None else to_float(full_row.get("test_auroc", "nan"))
-            auroc_noise = float("nan") if noise_row is None else to_float(noise_row.get("test_auroc", "nan"))
-            print(
-                f"  {model}: full(ndcg/ap/auroc)={ndcg_full:.4f}/{ap_full:.4f}/{auroc_full:.4f} "
-                f"noise={ndcg_noise:.4f}/{ap_noise:.4f}/{auroc_noise:.4f}"
-            )
+    print(
+        f"Ablation kind={args.ablation_kind}, "
+        f"fixed_feature_mode={args.fixed_feature_mode}, "
+        f"fixed_node_feature_mode={args.fixed_node_feature_mode}"
+    )
 
 
 if __name__ == "__main__":

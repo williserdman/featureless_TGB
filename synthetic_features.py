@@ -32,6 +32,11 @@ class NodeFeatureConfig:
     context_size: int
     node2vec_p: float
     node2vec_q: float
+    gae_refresh_interval: int
+    gae_steps: int
+    gae_lr: float
+    gae_max_edges: int
+    gae_batch_size: int
 
 
 class SyntheticFeatureEngine:
@@ -102,6 +107,7 @@ class NodeFeatureGenerator:
     - snapshot_pagerank
     - snapshot_node2vec
     - snapshot_deepwalk
+    - snapshot_gae
     """
 
     def __init__(self, config: NodeFeatureConfig) -> None:
@@ -126,6 +132,7 @@ class NodeFeatureGenerator:
         self._snapshot_embed = torch.zeros((self.cfg.num_nodes, self.cfg.embedding_dim), dtype=torch.float32)
         self._cached_timestamp: int | None = None
         self._cached_features = torch.zeros((self.cfg.num_nodes, self.cfg.node_feature_dim), dtype=torch.float32)
+        self._updates_since_refresh = 0
 
     @staticmethod
     def _normalize_rows(x: Tensor) -> Tensor:
@@ -220,10 +227,74 @@ class NodeFeatureGenerator:
 
         return self._normalize_rows(embed)
 
+    def _compute_snapshot_gae(self, *, current_time: int) -> Tensor:
+        edges = list(self._graph.edges())
+        if not edges:
+            return torch.zeros((self.cfg.num_nodes, self.cfg.embedding_dim), dtype=torch.float32)
+
+        max_edges = int(self.cfg.gae_max_edges)
+        if max_edges > 0 and len(edges) > max_edges:
+            step = max(1, len(edges) // max_edges)
+            edges = edges[::step][:max_edges]
+
+        edge_src = torch.tensor([int(src) for src, _ in edges], dtype=torch.long)
+        edge_dst = torch.tensor([int(dst) for _, dst in edges], dtype=torch.long)
+        num_edges = int(edge_src.numel())
+        if num_edges == 0:
+            return torch.zeros((self.cfg.num_nodes, self.cfg.embedding_dim), dtype=torch.float32)
+
+        gen = torch.Generator(device="cpu")
+        gen.manual_seed(int(self.cfg.noise_seed) + int(current_time) + 2903)
+
+        z = torch.randn(
+            (self.cfg.num_nodes, self.cfg.embedding_dim),
+            generator=gen,
+            dtype=torch.float32,
+            requires_grad=True,
+        )
+        optimizer = torch.optim.Adam([z], lr=float(self.cfg.gae_lr))
+
+        steps = max(1, int(self.cfg.gae_steps))
+        batch_size = max(1, min(int(self.cfg.gae_batch_size), num_edges))
+
+        with torch.enable_grad():
+            for _ in range(steps):
+                optimizer.zero_grad()
+
+                perm = torch.randperm(num_edges, generator=gen)[:batch_size]
+                pos_src = edge_src[perm]
+                pos_dst = edge_dst[perm]
+
+                neg_src = pos_src
+                neg_dst = torch.randint(0, self.cfg.num_nodes, (batch_size,), generator=gen, dtype=torch.long)
+
+                pos_score = (z[pos_src] * z[pos_dst]).sum(dim=1)
+                neg_score = (z[neg_src] * z[neg_dst]).sum(dim=1)
+
+                pos_loss = torch.nn.functional.binary_cross_entropy_with_logits(
+                    pos_score, torch.ones_like(pos_score)
+                )
+                neg_loss = torch.nn.functional.binary_cross_entropy_with_logits(
+                    neg_score, torch.zeros_like(neg_score)
+                )
+                reg_loss = 1e-5 * (z.pow(2).mean())
+                loss = pos_loss + neg_loss + reg_loss
+
+                loss.backward()
+                optimizer.step()
+
+        with torch.no_grad():
+            return self._normalize_rows(z.detach())
+
     def node_features_for_time(self, *, current_time: int) -> Tensor:
         mode = self.cfg.mode
         if mode == "none":
             return self._cached_features
+
+        if mode == "snapshot_gae" and self._cached_timestamp is not None:
+            refresh_interval = max(1, int(self.cfg.gae_refresh_interval))
+            if self._updates_since_refresh < refresh_interval:
+                return self._cached_features
 
         if self._cached_timestamp == current_time:
             return self._cached_features
@@ -247,14 +318,24 @@ class NodeFeatureGenerator:
             walks = self._generate_walks(current_time=current_time, p=1.0, q=1.0)
             self._snapshot_embed = self._walks_to_embedding(walks)
             self._cached_features = self._snapshot_embed @ self._proj_embed
+        elif mode == "snapshot_gae":
+            self._snapshot_embed = self._compute_snapshot_gae(current_time=current_time)
+            self._cached_features = self._snapshot_embed @ self._proj_embed
         else:
             raise ValueError(f"Unsupported node feature mode: {mode}")
 
         self._cached_timestamp = current_time
+        self._updates_since_refresh = 0
         return self._cached_features
 
     def update_state(self, *, src: int, dst: int, current_time: int) -> None:
         self._graph.add_edge(src, dst, weight=1.0)
         self._node_adj[src].add(dst)
         self._node_adj[dst].add(src)
-        self._cached_timestamp = None
+        self._updates_since_refresh += 1
+        if self.cfg.mode == "snapshot_gae":
+            refresh_interval = max(1, int(self.cfg.gae_refresh_interval))
+            if self._updates_since_refresh >= refresh_interval:
+                self._cached_timestamp = None
+        else:
+            self._cached_timestamp = None
